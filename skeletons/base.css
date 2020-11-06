@@ -87,6 +87,15 @@ font-style: italic;
 pre{
 overflow-x: auto;
 }
+/* FOOTER */
+footer{
+margin-top: 3em;
+}
+.footer-bar{
+display: flex;
+justify-content: center;
+column-gap: 1em;
+}
 /* SMALL SCREEN ADJUSTMENTS */
 @media screen and (max-width: 720px){
 body{
@@ -97,19 +106,13 @@ margin-right: 2.5%;
 header{
 flex-direction: column;
 }
+.menu-link{
+font-size: 1.5em;
+}
 .index-content{
 flex: 0;
 }
 .tags{
 display: none;
 }
-}
-/* FOOTER */
-footer{
-margin-top: 3em;
-}
-.footer-bar{
-display: flex;
-justify-content: center;
-column-gap: 1em;
 }
