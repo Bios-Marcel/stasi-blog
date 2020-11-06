@@ -15,5 +15,6 @@ func init() {
 
 func main() {
 	fs := http.FileServer(http.Dir(*output))
+	log.Println("Serving demo at localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", fs))
 }
