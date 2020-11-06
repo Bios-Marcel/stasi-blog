@@ -283,6 +283,10 @@ func addBaseData(targetSkeleton *template.Template, baseTemplate *template.Templ
 	if parseError != nil {
 		panic(parseError)
 	}
+	_, parseError = targetSkeleton.AddParseTree("footer", baseTemplate.Lookup("footer").Tree)
+	if parseError != nil {
+		panic(parseError)
+	}
 }
 
 func templateToString(temp *template.Template) string {

@@ -5,6 +5,10 @@
 <a class="menu-link" href="/">Home</a>{{range .CustomPages}}
 <a class="menu-link" href="/{{.File}}">{{.Title}}</a>{{end}}
 </nav>{{end}}
+{{define "footer"}}<hr>
+<div style="display: flex; justify-content: center; column-gap: 1em;">
+<a href="/feed.xml">RSS-Feed</a>
+</div>{{end}}
 {{define "base-metadata"}}<meta charset="UTF-8"/>
 <meta content='text/html; charset=utf-8' http-equiv='Content-Type'/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
