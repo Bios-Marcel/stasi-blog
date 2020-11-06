@@ -126,14 +126,18 @@ func main() {
 			for tagIndex, tag := range tags {
 				tags[tagIndex] = strings.ToLower(strings.TrimSpace(tag))
 			}
+			sort.Slice(tags, func(a, b int) bool {
+				return strings.Compare(tags[a], tags[b]) == -1
+			})
 		}
 
 		newIndexedArticle := &indexedArticle{
-			Title:   templateToString(specificArticleTemplate.Lookup("title")),
-			File:    articleTargetPath,
-			Time:    templateToString(specificArticleTemplate.Lookup("machine-date")),
-			Content: templateToString(specificArticleTemplate.Lookup("content")),
-			Tags:    tags,
+			Title:     templateToString(specificArticleTemplate.Lookup("title")),
+			File:      articleTargetPath,
+			Time:      templateToString(specificArticleTemplate.Lookup("machine-date")),
+			HumanTime: templateToString(specificArticleTemplate.Lookup("human-date")),
+			Content:   templateToString(specificArticleTemplate.Lookup("content")),
+			Tags:      tags,
 		}
 		indexedArticles = append(indexedArticles, newIndexedArticle)
 	}
@@ -299,11 +303,12 @@ func templateToOptionalString(temp *template.Template) string {
 }
 
 type indexedArticle struct {
-	Title   string
-	File    string
-	Time    string
-	Content string
-	Tags    []string
+	Title     string
+	File      string
+	Time      string
+	HumanTime string
+	Content   string
+	Tags      []string
 }
 
 func timeFromRFC3339(value string) time.Time {

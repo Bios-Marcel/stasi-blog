@@ -56,8 +56,15 @@ flex-direction: row;
 .articles{
 flex: 1;
 }
-.articles h2{
+.article-entry{
+margin-bottom: 1em;
+}
+.article-title{
 margin-top: 0;
+margin-bottom: 0;
+}
+.article-tag + .article-tag::before{
+content: ", ";
 }
 .tags{
 margin-left: 2em;
