@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var input, output *string
@@ -27,9 +28,18 @@ func cleanAndPrepareOutputDirectory() {
 		panic(absError)
 	}
 
-	if deleteError := os.RemoveAll(absoluteOutputPath); deleteError != nil && !os.IsNotExist(deleteError) {
-		panic(deleteError)
-	}
+	filepath.Walk(absoluteOutputPath, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		//Dotfiles are generally being ignored.
+		if strings.Contains(path, "/.") {
+			return nil
+		}
+
+		return os.Remove(path)
+	})
 
 	createEmptyDirectory(absoluteOutputPath)
 	createEmptyDirectory(filepath.Join(absoluteOutputPath, outputCustomPages))
