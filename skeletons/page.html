@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+{{template "base-metadata"}}
+<meta property="og:type" content="website" />
+<link rel="stylesheet" href="/base.css">
+<title>{{template "title"}} | {{.SiteName}}</title>
+</head>
+<body>
+<header>
+{{template "header" .}}
+</header>
+<h1>{{template "title"}}</h1>
+{{template "content"}}
+</body>
+</html>

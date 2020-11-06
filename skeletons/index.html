@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+{{template "base-metadata"}}
+<meta property="og:type" content="website" />
+<link rel="stylesheet" href="/base.css">
+<title>{{.SiteName}}</title>
+</head>
+<body>
+<header>
+{{template "header" .}}
+</header>
+<div class="index-content">
+<div class="articles">{{range .IndexedArticles}}
+<a href="{{.File}}"><h2>{{.Title}}</h2></a>{{end}}
+</div>{{$filterTag := .FilterTag}}
+{{if .Tags}}<div class="tags">
+<h2>Tags</h2><div class="tag-list">{{range .Tags}}
+<a href="index-tag-{{.}}.html">{{if eq $filterTag .}}> {{end}}{{.}}</a>{{end}}
+</div></div>{{end}}
+</div>
+</body>
+</html>

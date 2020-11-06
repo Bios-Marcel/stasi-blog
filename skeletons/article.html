@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+{{template "base-metadata"}}
+<link rel="stylesheet" href="/base.css">
+
+<title>{{template "title"}} | {{.SiteName}}</title>
+<meta property="og:title" content="{{template "title"}}" />
+<meta property="og:type" content="article"/>
+<meta property="article:published_time" content="{{template "machine-date"}}" />
+</head>
+<body>
+<header>
+{{template "header" .}}
+</header>
+<article>
+<h1>{{template "title"}}</h1>
+<p class="authoring-date">Written on {{template "human-date"}}</p>
+{{template "content"}}
+{{if .UtterancesRepo}}<script src="https://utteranc.es/client.js"
+        repo="{{.UtterancesRepo}}"
+        issue-term="title"
+        theme="preferred-color-scheme"
+        async>
+</script>
+<noscript>
+<p><b>If you wish to access the comment section, you need to enable JavaScript.</b></p>
+</noscript>{{end}}
+</article>
+</body>
+</html>
