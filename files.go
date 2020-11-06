@@ -26,7 +26,6 @@ func writeTemplateToFile(sourceTemplate *template.Template, data interface{}, pa
 	if executeError != nil {
 		panic(executeError)
 	}
-
 }
 
 func copyFile(sourcePath, targetPath string) {

@@ -27,8 +27,8 @@ func main() {
 		log.Fatalf("Error loading config: %s\n", openError)
 	}
 
-	loadedPageConfig := &pageConfig{}
-	configDecodeError := json.NewDecoder(configFile).Decode(loadedPageConfig)
+	loadedPageConfig := pageConfig{}
+	configDecodeError := json.NewDecoder(configFile).Decode(&loadedPageConfig)
 	if configDecodeError != nil {
 		log.Fatalf("Error decoding config: %s\n", configDecodeError)
 	}
@@ -112,11 +112,14 @@ func main() {
 		if parseError != nil {
 			panic(parseError)
 		}
-		articleTargetPath := filepath.Join(outputArticles, article.Name())
-		writeTemplateToFile(specificArticleTemplate, &customPageData{
+		articleData := &customPageData{
 			pageConfig:  loadedPageConfig,
 			CustomPages: customPages,
-		}, articleTargetPath)
+		}
+		articleData.Description = templateToOptionalString(specificArticleTemplate.Lookup("description"))
+
+		articleTargetPath := filepath.Join(outputArticles, article.Name())
+		writeTemplateToFile(specificArticleTemplate, articleData, articleTargetPath)
 
 		tagString := strings.TrimSpace(templateToOptionalString(specificArticleTemplate.Lookup("tags")))
 		var tags []string
@@ -256,13 +259,13 @@ type customPageEntry struct {
 }
 
 type customPageData struct {
-	*pageConfig
+	pageConfig
 	//CustomPages are pages listed in the header next to "Home"
 	CustomPages []*customPageEntry
 }
 
 type indexData struct {
-	*pageConfig
+	pageConfig
 	//Tags are all available tags used accross all posts
 	Tags []string
 	//FilterTag that is currently filtered for
