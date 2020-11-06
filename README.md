@@ -63,12 +63,12 @@ An example for the `config.json`:
 
 ```json
 {
-	"SiteName":"My Blog",
-	"Author":"Firstname Lastname",
-	"URL":"https://github-handle.github.io",
-	"Description":"something descriptive",
-	"Email":"mail@provider.com",
-	"CreationDate":"2018-05-27T00:00:00+00:00",
+   "SiteName":"My Blog",
+   "Author":"Firstname Lastname",
+   "URL":"https://github-handle.github.io",
+   "Description":"something descriptive",
+   "Email":"mail@provider.com",
+   "CreationDate":"2018-05-27T00:00:00+00:00",
    "UtterancesRepo": "github-handle/github-handle.github.io"
 }
 ```
