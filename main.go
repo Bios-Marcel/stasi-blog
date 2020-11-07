@@ -142,7 +142,7 @@ func main() {
 	sort.Slice(indexedArticles, func(a, b int) bool {
 		articleA := indexedArticles[a]
 		articleB := indexedArticles[b]
-		return articleA.RFC3339Time.Before(articleB.RFC3339Time)
+		return articleB.RFC3339Time.Before(articleA.RFC3339Time)
 	})
 
 	//Collect tags from all articles for listing them in the index files.
