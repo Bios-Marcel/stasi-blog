@@ -11,8 +11,7 @@
 {{/* Avoids favicon request */}}
 <link rel="icon" href="data:,"/>{{end}}
 
-{{define "base-metadata"}}
-<meta content='text/html; charset=utf-8' http-equiv='Content-Type'/>
+{{define "base-metadata"}}<meta content='text/html; charset=utf-8' http-equiv='Content-Type'/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>{{end}}
 {{define "opt-metadata"}}<meta charset="UTF-8"/>{{if .Author}}
 <meta name="author" content="{{.Author}}"/>{{end}}{{if .Description}}

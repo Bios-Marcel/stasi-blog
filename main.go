@@ -96,7 +96,7 @@ func main() {
 		if parseError != nil {
 			panic(parseError)
 		}
-		articleData := &customPageData{
+		articleData := &articlePageData{
 			pageConfig:  loadedPageConfig,
 			CustomPages: customPages,
 		}
@@ -274,10 +274,16 @@ type customPageEntry struct {
 	File  string
 }
 
-type customPageData struct {
+type articlePageData struct {
 	pageConfig
 	//Tags for metadata
 	Tags []string
+	//CustomPages are pages listed in the header next to "Home"
+	CustomPages []*customPageEntry
+}
+
+type customPageData struct {
+	pageConfig
 	//CustomPages are pages listed in the header next to "Home"
 	CustomPages []*customPageEntry
 }
