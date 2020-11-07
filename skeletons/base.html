@@ -1,13 +1,13 @@
 {{define "header"}}<div class="site-info">
-<h1 class="site-name"><a href="/">{{.SiteName}}</a></h1>
+<h1 class="site-name"><a href="{{.BasePath}}/">{{.SiteName}}</a></h1>
 </div>
-<nav>
-<a class="menu-link" href="/">Home</a>{{range .CustomPages}}
-<a class="menu-link" href="/{{.File}}">{{.Title}}</a>{{end}}
+<nav>{{$BasePath := .BasePath}}
+<a class="menu-link" href="{{.BasePath}}/">Home</a>{{range .CustomPages}}
+<a class="menu-link" href="{{$BasePath}}/{{.File}}">{{.Title}}</a>{{end}}
 </nav>{{end}}
 
 {{define "base-header"}}
-<link rel="stylesheet" href="/base.css">
+<link rel="stylesheet" type="text/css" href="{{.BasePath}}/base.css">
 {{/* Avoids favicon request */}}
 <link rel="icon" href="data:,"/>{{end}}
 
@@ -22,5 +22,5 @@
 
 {{define "footer"}}<hr>
 <div class="footer-bar">
-<a href="/feed.xml">RSS-Feed</a>
+<a href="{{.BasePath}}/feed.xml">RSS-Feed</a>
 </div>{{end}}

@@ -135,12 +135,13 @@ func main() {
 		writeTemplateToFile(specificArticleTemplate, articleData, articleTargetPath)
 
 		newIndexedArticle := &indexedArticle{
-			Title:     templateToString(specificArticleTemplate.Lookup("title")),
-			File:      articleTargetPath,
-			Time:      templateToString(specificArticleTemplate.Lookup("machine-date")),
-			HumanTime: templateToString(specificArticleTemplate.Lookup("human-date")),
-			Content:   templateToString(specificArticleTemplate.Lookup("content")),
-			Tags:      tags,
+			pageConfig: loadedPageConfig,
+			Title:      templateToString(specificArticleTemplate.Lookup("title")),
+			File:       articleTargetPath,
+			Time:       templateToString(specificArticleTemplate.Lookup("machine-date")),
+			HumanTime:  templateToString(specificArticleTemplate.Lookup("human-date")),
+			Content:    templateToString(specificArticleTemplate.Lookup("content")),
+			Tags:       tags,
 		}
 		indexedArticles = append(indexedArticles, newIndexedArticle)
 	}
@@ -244,6 +245,7 @@ func main() {
 }
 
 type pageConfig struct {
+	BasePath            string
 	SiteName            string
 	Author              string
 	URL                 string
@@ -306,6 +308,7 @@ func templateToOptionalString(temp *template.Template) string {
 }
 
 type indexedArticle struct {
+	pageConfig
 	Title     string
 	File      string
 	Time      string

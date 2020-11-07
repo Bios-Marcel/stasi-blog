@@ -17,7 +17,7 @@
 <article>
 <h1>{{template "title"}}</h1>
 <p class="authoring-date">Written on {{template "human-date"}}</p>
-{{template "content"}}
+{{template "content" .}}
 {{if .UtterancesRepo}}<script src="https://utteranc.es/client.js"
         repo="{{.UtterancesRepo}}"
         issue-term="title"

@@ -63,6 +63,7 @@ An example for the `config.json`:
 
 ```json
 {
+   "BasePath": "",
    "SiteName":"My Blog",
    "Author":"Firstname Lastname",
    "URL":"https://github-handle.github.io",
@@ -76,6 +77,7 @@ An example for the `config.json`:
 
 The date is in RFC3339 format and the following properties are optional:
 
+* `BasePath` (Needed if files aren't served at domain-root)
 * `Author` (Used for metadata/RSS)
 * `URL` (Used for metadata/RSS)
 * `Description` (Used for metadata/RSS)
