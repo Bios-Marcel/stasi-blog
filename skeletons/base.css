@@ -3,7 +3,10 @@ html{
 /*Sans-Serif fonts */
 font-family: Frutiger, "Frutiger Linotype", Univers, Calibri, "Myriad Pro", Myriad, "DejaVu Sans Condensed", "Liberation Sans", "Nimbus Sans L", Tahoma, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
-article, details, footer, .articles{
+article{
+display: inline-block;
+}
+details, footer, .articles{
 display: block;
 }
 body{
