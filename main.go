@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -86,7 +87,10 @@ func main() {
 
 	var author *feeds.Author
 	if loadedPageConfig.Author != "" || loadedPageConfig.Email != "" {
-		author = &feeds.Author{Name: loadedPageConfig.Author, Email: loadedPageConfig.Email}
+		author = &feeds.Author{
+			Name:  loadedPageConfig.Author,
+			Email: loadedPageConfig.Email,
+		}
 	}
 
 	feed := &feeds.Feed{
@@ -163,13 +167,15 @@ func main() {
 	var tags []string
 	for _, article := range indexedArticles {
 		newFeedItem := &feeds.Item{
-			Title:   article.Title,
-			Author:  author,
-			Content: article.Content,
+			Title: article.Title,
+			//Causes feed to be invalid.
+			//Author:      author,
+			Content:     article.Content,
+			Description: article.Description,
 		}
 		feed.Items = append(feed.Items, newFeedItem)
 		if loadedPageConfig.URL != "" {
-			newFeedItem.Link = &feeds.Link{Href: filepath.Join(loadedPageConfig.URL, article.File)}
+			newFeedItem.Link = &feeds.Link{Href: path.Join(loadedPageConfig.URL, article.File)}
 		}
 		if article.Time != "" {
 			newFeedItem.Created = timeFromRFC3339(article.Time)
