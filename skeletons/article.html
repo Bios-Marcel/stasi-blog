@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-{{template "base-metadata" .}}
-<link rel="stylesheet" href="/base.css">
+{{template "base-header" .}}
 <title>{{template "title"}} | {{.SiteName}}</title>
+{{template "base-metadata" .}}{{if .AddOptionalMetaData}}
+{{template "opt-metadata" .}}
 <meta property="og:title" content="{{template "title"}}" />
-<meta property="og:type" content="article"/>
-<meta property="article:published_time" content="{{template "machine-date"}}" />
+<meta property="og:type" content="article"/>{{if .Tags}}{{range .Tags}}
+<meta property="article:tag" content="{{.}}"/>{{end}}{{end}}
+<meta property="article:published_time" content="{{template "machine-date"}}" />{{end}}
 </head>
 <body>
 <header>

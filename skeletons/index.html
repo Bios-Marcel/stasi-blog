@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-{{template "base-metadata" .}}
-<meta property="og:type" content="website" />
-<link rel="stylesheet" href="/base.css">
+{{template "base-header" .}}
 <title>{{.SiteName}}</title>
+{{template "base-metadata" .}}{{if .AddOptionalMetaData}}
+{{template "opt-metadata" .}}
+<meta property="og:type" content="website" />{{end}}
 </head>
 <body>
 <header>

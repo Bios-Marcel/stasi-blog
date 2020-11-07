@@ -69,7 +69,8 @@ An example for the `config.json`:
    "Description":"something descriptive",
    "Email":"mail@provider.com",
    "CreationDate":"2018-05-27T00:00:00+00:00",
-   "UtterancesRepo": "github-handle/github-handle.github.io"
+   "UtterancesRepo": "github-handle/github-handle.github.io",
+   "AddOptionalMetaData": true
 }
 ```
 
@@ -81,6 +82,7 @@ The date is in RFC3339 format and the following properties are optional:
 * `Email` (Used for RSS)
 * `CreationDate` (Used for metadata/RSS)
 * `UtterancesRepo` (Needed for comments)
+* `AddOptionalMetaData` (Add metadata such as tags, description, author and so on)
 
 The content of the `pages` folder will be added as stand-alone pages. Those
 will show up in the header of the page and do not offer a comment-section.

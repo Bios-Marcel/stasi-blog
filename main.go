@@ -47,7 +47,7 @@ func main() {
 	if parseError != nil {
 		panic(parseError)
 	}
-	addBaseData(customPageSkeleton, baseTemplate)
+	addSubTemplates(customPageSkeleton, baseTemplate)
 
 	customPageTemplates := make(map[string]*template.Template)
 	var customPages []*customPageEntry
@@ -77,7 +77,7 @@ func main() {
 		panic(parseError)
 	}
 
-	addBaseData(articleSkeleton, baseTemplate)
+	addSubTemplates(articleSkeleton, baseTemplate)
 
 	articles, readError := ioutil.ReadDir(filepath.Join(*input, "articles"))
 	if readError != nil {
@@ -117,10 +117,6 @@ func main() {
 			CustomPages: customPages,
 		}
 		articleData.Description = templateToOptionalString(specificArticleTemplate.Lookup("description"))
-
-		articleTargetPath := filepath.Join(outputArticles, article.Name())
-		writeTemplateToFile(specificArticleTemplate, articleData, articleTargetPath)
-
 		tagString := strings.TrimSpace(templateToOptionalString(specificArticleTemplate.Lookup("tags")))
 		var tags []string
 		//Tags are optional
@@ -133,6 +129,10 @@ func main() {
 				return strings.Compare(tags[a], tags[b]) == -1
 			})
 		}
+		articleData.Tags = tags
+
+		articleTargetPath := filepath.Join(outputArticles, article.Name())
+		writeTemplateToFile(specificArticleTemplate, articleData, articleTargetPath)
 
 		newIndexedArticle := &indexedArticle{
 			Title:     templateToString(specificArticleTemplate.Lookup("title")),
@@ -197,7 +197,7 @@ func main() {
 	if parseError != nil {
 		panic(parseError)
 	}
-	addBaseData(indexSkeleton, baseTemplate)
+	addSubTemplates(indexSkeleton, baseTemplate)
 
 	//Main Index with all articles.
 	writeTemplateToFile(indexSkeleton, &indexData{
@@ -244,13 +244,14 @@ func main() {
 }
 
 type pageConfig struct {
-	SiteName       string
-	Author         string
-	URL            string
-	Description    string
-	Email          string
-	CreationDate   string
-	UtterancesRepo string
+	SiteName            string
+	Author              string
+	URL                 string
+	Description         string
+	Email               string
+	CreationDate        string
+	UtterancesRepo      string
+	AddOptionalMetaData bool
 }
 
 type customPageEntry struct {
@@ -260,6 +261,8 @@ type customPageEntry struct {
 
 type customPageData struct {
 	pageConfig
+	//Tags for metadata
+	Tags []string
 	//CustomPages are pages listed in the header next to "Home"
 	CustomPages []*customPageEntry
 }
@@ -276,19 +279,12 @@ type indexData struct {
 	IndexedArticles []*indexedArticle
 }
 
-func addBaseData(targetSkeleton *template.Template, baseTemplate *template.Template) {
-	var parseError error
-	_, parseError = targetSkeleton.AddParseTree("header", baseTemplate.Lookup("header").Tree)
-	if parseError != nil {
-		panic(parseError)
-	}
-	_, parseError = targetSkeleton.AddParseTree("base-metadata", baseTemplate.Lookup("base-metadata").Tree)
-	if parseError != nil {
-		panic(parseError)
-	}
-	_, parseError = targetSkeleton.AddParseTree("footer", baseTemplate.Lookup("footer").Tree)
-	if parseError != nil {
-		panic(parseError)
+func addSubTemplates(targetTemplate *template.Template, sourceTemplates *template.Template) {
+	for _, subTemplate := range sourceTemplates.Templates() {
+		_, addError := targetTemplate.AddParseTree(subTemplate.Name(), subTemplate.Tree)
+		if addError != nil {
+			panic(addError)
+		}
 	}
 }
 
