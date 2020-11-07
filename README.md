@@ -2,27 +2,12 @@
 
 A small generator for **sta**tic and **si**mple **blog**s.
 
-## Features
+## Overview
 
-* Article overview
-* RSS Feed
-* Mobile friendly
-* Automatic Darkmode / Lightmode
-* Custom Pages (Example would be an About page)
-* Fast to load even with a shitty internet connection
-
-### Desktop-only features
-
-* Optional `Tags` sidebar + Tag filtering
-
-### Feature only available with JS
-
-* Comments via utteranc.es (via GitHub issues)
-
-## Non-Goals
-
-* Easy to write articles (It's HTML)
-* Easy to customize
+- [Building](#building)
+- [Usaeg](#usage)
+- [Example](#example)
+- [Features](#features)
 
 ## Building
 
@@ -42,7 +27,7 @@ go run demo/server.go
 
 Then open [localhost:8080](http://localhost:8080).
 
-## How to use it
+## Usage
 
 There's an input and an output folder. Both of these can be specified via
 respective parameters.
@@ -78,15 +63,15 @@ An example for the `config.json`:
 
 The date is in RFC3339 format and the following properties are optional:
 
-* `BasePath` (Needed if files aren't served at domain-root)
-* `Author` (Used for metadata/RSS)
-* `URL` (Used for metadata/RSS)
-* `Description` (Used for metadata/RSS)
-* `Email` (Used for RSS)
-* `CreationDate` (Used for metadata/RSS)
-* `UtterancesRepo` (Needed for comments)
-* `AddOptionalMetaData` (Add metadata such as tags, description, author and so on)
-* `DateFormat` (Needed for human readable dates later on)
+- `BasePath` (Needed if files aren't served at domain-root)
+- `Author` (Used for metadata/RSS)
+- `URL` (Used for metadata/RSS)
+- `Description` (Used for metadata/RSS)
+- `Email` (Used for RSS)
+- `CreationDate` (Used for metadata/RSS)
+- `UtterancesRepo` (Needed for comments)
+- `AddOptionalMetaData` (Add metadata such as tags, description, author and so on)
+- `DateFormat` (Needed for human readable dates later on)
   > [The format requires specific numbers](https://golang.org/pkg/time/#pkg-constants), it's weird.
 
 The content of the `pages` folder will be added as stand-alone pages. Those
@@ -103,13 +88,29 @@ specified as output, which is `./output` by default. All data that was
 previously written to the output folder will be deleted. Manually created
 files however will be kept.
 
-## Fonts used
+## Example
 
-Thanks to Kev Quirk for his post on local fonts:
+An example can be found in the `example` folder at the root of the repository.
 
-https://kevq.uk/how-local-fonts-can-save-the-environment/
+## Features
 
-I just copied it over and trust his judgement!
-Personally, I don't care about the exact font used as long as it looks okay.
-I also value sites that load fast and obviously, little amount of things to
-download will help.
+* Article overview
+* RSS Feed
+* Mobile friendly
+* Automatic Darkmode / Lightmode
+* Custom Pages (Example would be an About page)
+* Fast to load even with a shitty internet connection
+
+### Desktop-only features
+
+* Optional `Tags` sidebar + Tag filtering
+
+### Feature only available with JS
+
+* Comments via utteranc.es (via GitHub issues)
+
+### Future
+
+I might add the option to write posts with Markdown. My main goal was the
+ability to write posts with HTML, but as that kinda comes for free, Markdown
+will be an add-on.
