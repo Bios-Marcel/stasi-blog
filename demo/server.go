@@ -4,6 +4,9 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 var output, basepath *string
@@ -17,6 +20,13 @@ func init() {
 func main() {
 	//Example in my case.
 	//go run . --input="../blog-test-source" --output="../blog-test" & go run demo/server.go --output="../blog-test" --basepath="/blog-test/"
+
+	go func() {
+		sc := make(chan os.Signal, 1)
+		signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+		<-sc
+		os.Exit(0)
+	}()
 
 	if *basepath == "" {
 		log.Println("Serving " + *output + " at localhost:8080")
