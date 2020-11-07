@@ -12,14 +12,14 @@ import (
 var output, basepath *string
 
 func init() {
-	output = flag.String("output", "output", "defines the output folder")
+	output = flag.String("dir", "dir", "defines the directory that is being served")
 	basepath = flag.String("basepath", "", "specify basepath to simulate remote setup where files aren't at root")
 	flag.Parse()
 }
 
 func main() {
 	//Example in my case.
-	//go run . --input="../blog-test-source" --output="../blog-test" & go run demo/server.go --output="../blog-test" --basepath="/blog-test/"
+	//go run . --input="../blog-test-source" --output="../blog-test" & go run demo/server.go --dir="../blog-test" --basepath="/blog-test/"
 
 	go func() {
 		sc := make(chan os.Signal, 1)
