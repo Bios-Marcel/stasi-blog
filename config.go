@@ -28,18 +28,21 @@ func cleanAndPrepareOutputDirectory() {
 		panic(absError)
 	}
 
-	filepath.Walk(absoluteOutputPath, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return nil
-		}
+	_, statError := os.Stat(absoluteOutputPath)
+	if statError != nil && !os.IsNotExist(statError) {
+		filepath.Walk(absoluteOutputPath, func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
+			}
 
-		//Dotfiles are generally being ignored.
-		if strings.Contains(path, "/.") {
-			return nil
-		}
+			//Dotfiles are generally being ignored.
+			if strings.Contains(path, "/.") {
+				return nil
+			}
 
-		return os.Remove(path)
-	})
+			return os.Remove(path)
+		})
+	}
 
 	createEmptyDirectory(absoluteOutputPath)
 	createEmptyDirectory(filepath.Join(absoluteOutputPath, outputCustomPages))
