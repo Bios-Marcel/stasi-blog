@@ -28,7 +28,9 @@ func main() {
 		log.Fatalf("Error loading config: %s\n", openError)
 	}
 
-	loadedPageConfig := pageConfig{}
+	loadedPageConfig := pageConfig{
+		DateFormat: "2 January 2006",
+	}
 	configDecodeError := json.NewDecoder(configFile).Decode(&loadedPageConfig)
 	if configDecodeError != nil {
 		log.Fatalf("Error decoding config: %s\n", configDecodeError)
@@ -114,18 +116,24 @@ func main() {
 			})
 		}
 		articleData.Tags = tags
-
+		publishTime, timeParseError := time.Parse("2006-01-02", templateToString(specificArticleTemplate.Lookup("date")))
+		if timeParseError != nil {
+			panic(timeParseError)
+		}
+		articleData.RFC3339Time = publishTime.Format(time.RFC3339)
+		articleData.HumanTime = publishTime.Format(loadedPageConfig.DateFormat)
 		articleTargetPath := filepath.Join(outputArticles, article.Name())
+
 		writeTemplateToFile(specificArticleTemplate, articleData, articleTargetPath)
 
 		newIndexedArticle := &indexedArticle{
-			pageConfig: loadedPageConfig,
-			Title:      templateToString(specificArticleTemplate.Lookup("title")),
-			File:       articleTargetPath,
-			Time:       templateToString(specificArticleTemplate.Lookup("machine-date")),
-			HumanTime:  templateToString(specificArticleTemplate.Lookup("human-date")),
-			Content:    templateToString(specificArticleTemplate.Lookup("content")),
-			Tags:       tags,
+			pageConfig:  loadedPageConfig,
+			Title:       templateToString(specificArticleTemplate.Lookup("title")),
+			File:        articleTargetPath,
+			RFC3339Time: publishTime,
+			HumanTime:   publishTime.Format(loadedPageConfig.DateFormat),
+			Content:     templateToString(specificArticleTemplate.Lookup("content")),
+			Tags:        tags,
 		}
 		indexedArticles = append(indexedArticles, newIndexedArticle)
 	}
@@ -134,15 +142,7 @@ func main() {
 	sort.Slice(indexedArticles, func(a, b int) bool {
 		articleA := indexedArticles[a]
 		articleB := indexedArticles[b]
-		timeA := timeFromRFC3339(articleA.Time)
-		if parseError != nil {
-			panic(parseError)
-		}
-		timeB := timeFromRFC3339(articleB.Time)
-		if parseError != nil {
-			panic(parseError)
-		}
-		return timeB.Before(timeA)
+		return articleA.RFC3339Time.Before(articleB.RFC3339Time)
 	})
 
 	//Collect tags from all articles for listing them in the index files.
@@ -236,13 +236,11 @@ func writeRSSFeed(articles []*indexedArticle, loadedPageConfig pageConfig) {
 			//Author:      author,
 			Content:     article.Content,
 			Description: article.Description,
+			Created:     article.RFC3339Time,
 		}
 		feed.Items = append(feed.Items, newFeedItem)
 		if loadedPageConfig.URL != "" {
 			newFeedItem.Link = &feeds.Link{Href: path.Join(loadedPageConfig.URL, article.File)}
-		}
-		if article.Time != "" {
-			newFeedItem.Created = timeFromRFC3339(article.Time)
 		}
 	}
 
@@ -263,6 +261,7 @@ type pageConfig struct {
 	Author              string
 	URL                 string
 	Description         string
+	DateFormat          string
 	Email               string
 	CreationDate        string
 	UtterancesRepo      string
@@ -276,6 +275,10 @@ type customPageEntry struct {
 
 type articlePageData struct {
 	pageConfig
+	//Time article was published in RFC3339 format.
+	RFC3339Time string
+	//HumanTime is a human readable time format.
+	HumanTime string
 	//Tags for metadata
 	Tags []string
 	//CustomPages are pages listed in the header next to "Home"
@@ -328,12 +331,12 @@ func templateToOptionalString(temp *template.Template) string {
 
 type indexedArticle struct {
 	pageConfig
-	Title     string
-	File      string
-	Time      string
-	HumanTime string
-	Content   string
-	Tags      []string
+	Title       string
+	File        string
+	RFC3339Time time.Time
+	HumanTime   string
+	Content     string
+	Tags        []string
 }
 
 func timeFromRFC3339(value string) time.Time {

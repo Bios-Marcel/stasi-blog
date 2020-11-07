@@ -8,7 +8,7 @@
 <meta property="og:title" content="{{template "title"}}" />
 <meta property="og:type" content="article"/>{{if .Tags}}{{range .Tags}}
 <meta property="article:tag" content="{{.}}"/>{{end}}{{end}}
-<meta property="article:published_time" content="{{template "machine-date"}}" />{{end}}
+<meta property="article:published_time" content="{{.RFC3339Time}}" />{{end}}
 </head>
 <body>
 <header>
@@ -16,7 +16,7 @@
 </header>
 <article>
 <h1>{{template "title"}}</h1>
-<p class="authoring-date">Written on {{template "human-date"}}</p>
+<p class="authoring-date">Written on {{.HumanTime}}</p>
 {{template "content" .}}
 {{if .UtterancesRepo}}<script src="https://utteranc.es/client.js"
         repo="{{.UtterancesRepo}}"
