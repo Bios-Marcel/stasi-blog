@@ -85,26 +85,6 @@ func main() {
 		panic(readError)
 	}
 
-	var author *feeds.Author
-	if loadedPageConfig.Author != "" || loadedPageConfig.Email != "" {
-		author = &feeds.Author{
-			Name:  loadedPageConfig.Author,
-			Email: loadedPageConfig.Email,
-		}
-	}
-
-	feed := &feeds.Feed{
-		Title:       loadedPageConfig.SiteName,
-		Description: loadedPageConfig.Description,
-		Author:      author,
-	}
-	if loadedPageConfig.URL != "" {
-		feed.Link = &feeds.Link{Href: loadedPageConfig.URL}
-	}
-	if loadedPageConfig.CreationDate != "" {
-		feed.Created = timeFromRFC3339(loadedPageConfig.CreationDate)
-	}
-
 	var indexedArticles []*indexedArticle
 	for _, article := range articles {
 		newArticleSkeleton, cloneError := articleSkeleton.Clone()
@@ -150,6 +130,7 @@ func main() {
 		indexedArticles = append(indexedArticles, newIndexedArticle)
 	}
 
+	//Sort articles to make sure the RSS feed and index have the right ordering.
 	sort.Slice(indexedArticles, func(a, b int) bool {
 		articleA := indexedArticles[a]
 		articleB := indexedArticles[b]
@@ -164,22 +145,9 @@ func main() {
 		return timeB.Before(timeA)
 	})
 
+	//Collect tags from all articles for listing them in the index files.
 	var tags []string
 	for _, article := range indexedArticles {
-		newFeedItem := &feeds.Item{
-			Title: article.Title,
-			//Causes feed to be invalid.
-			//Author:      author,
-			Content:     article.Content,
-			Description: article.Description,
-		}
-		feed.Items = append(feed.Items, newFeedItem)
-		if loadedPageConfig.URL != "" {
-			newFeedItem.Link = &feeds.Link{Href: path.Join(loadedPageConfig.URL, article.File)}
-		}
-		if article.Time != "" {
-			newFeedItem.Created = timeFromRFC3339(article.Time)
-		}
 	NEW_TAG_LOOP:
 		for _, tag := range article.Tags {
 			for _, existingTag := range tags {
@@ -214,7 +182,7 @@ func main() {
 		IndexedArticles: indexedArticles,
 	}, "index.html")
 
-	//Special Indexes with tag-filters
+	//Special Index-Files with tag-filters
 	for _, tag := range tags {
 		var tagFilteredArticles []*indexedArticle
 	ARTICLE_LOOP:
@@ -236,6 +204,48 @@ func main() {
 		}, "index-tag-"+tag+".html")
 	}
 
+	writeRSSFeed(indexedArticles, loadedPageConfig)
+	copyFile("skeletons/base.css", filepath.Join(*output, "base.css"))
+	copy.Copy(filepath.Join(*input, "media"), filepath.Join(*output, "media"))
+}
+
+func writeRSSFeed(articles []*indexedArticle, loadedPageConfig pageConfig) {
+	var author *feeds.Author
+	if loadedPageConfig.Author != "" || loadedPageConfig.Email != "" {
+		author = &feeds.Author{
+			Name:  loadedPageConfig.Author,
+			Email: loadedPageConfig.Email,
+		}
+	}
+	feed := &feeds.Feed{
+		Title:       loadedPageConfig.SiteName,
+		Description: loadedPageConfig.Description,
+		Author:      author,
+	}
+	if loadedPageConfig.URL != "" {
+		feed.Link = &feeds.Link{Href: loadedPageConfig.URL}
+	}
+	if loadedPageConfig.CreationDate != "" {
+		feed.Created = timeFromRFC3339(loadedPageConfig.CreationDate)
+	}
+
+	for _, article := range articles {
+		newFeedItem := &feeds.Item{
+			Title: article.Title,
+			//Causes feed to be invalid.
+			//Author:      author,
+			Content:     article.Content,
+			Description: article.Description,
+		}
+		feed.Items = append(feed.Items, newFeedItem)
+		if loadedPageConfig.URL != "" {
+			newFeedItem.Link = &feeds.Link{Href: path.Join(loadedPageConfig.URL, article.File)}
+		}
+		if article.Time != "" {
+			newFeedItem.Created = timeFromRFC3339(article.Time)
+		}
+	}
+
 	rssFile := createFile(filepath.Join(*output, "feed.xml"))
 	rssData, rssError := feed.ToRss()
 	if rssError != nil {
@@ -245,9 +255,6 @@ func main() {
 	if writeError != nil {
 		panic(writeError)
 	}
-
-	copyFile("skeletons/base.css", filepath.Join(*output, "base.css"))
-	copy.Copy(filepath.Join(*input, "media"), filepath.Join(*output, "media"))
 }
 
 type pageConfig struct {
