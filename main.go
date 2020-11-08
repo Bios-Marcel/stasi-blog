@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -246,9 +247,13 @@ func writeRSSFeed(articles []*indexedArticle, loadedPageConfig pageConfig) {
 			Created:     article.RFC3339Time,
 		}
 		if article.podcastAudio != "" {
+			audioFile, statError := os.Stat(filepath.Join(*input, article.podcastAudio))
+			if statError != nil {
+				panic(statError)
+			}
 			newFeedItem.Enclosure = &feeds.Enclosure{
 				Type:   "audio/mp3",
-				Length: "3489909",
+				Length: strconv.FormatInt(audioFile.Size(), 10),
 				Url:    path.Join(feed.Link.Href, article.podcastAudio),
 			}
 		}
