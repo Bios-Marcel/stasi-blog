@@ -16,8 +16,8 @@
 </header>
 <article>
 <h1>{{template "title"}}</h1>
-<p class="authoring-date">Written on {{.HumanTime}}</p>
-<audio controls>{{if .PodcastAudio}}
+<p class="authoring-date">Written on {{.HumanTime}}</p>{{if .PodcastAudio}}
+<audio controls>
 <source src="{{.PodcastAudio}}" type="audio/mp3">
 Your browser is unable to play this audio.
 </audio>{{end}}
