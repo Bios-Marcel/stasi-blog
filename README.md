@@ -11,15 +11,17 @@ A small generator for **sta**tic and **si**mple **blog**s.
 
 ## Building
 
-First, you need to download Golang and then execute the following:
+First, you need to download Golang.
+
+Next, you can execute the following:
 
 ```sh
-go run .
+go run . --input="example"
 ```
 
 This will compile all files needed for the page.
 
-To test, run:
+To test the output, run:
 
 ```sh
 go run demo/server.go
