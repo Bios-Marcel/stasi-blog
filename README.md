@@ -104,7 +104,7 @@ An example can be found in the `example` folder at the root of the repository.
 * Mobile friendly
 * Automatic Darkmode / Lightmode
 * Custom Pages (Example would be an About page)
-* Fast to load even with a shitty internet connection
+* Fast to load even with a slow (less than 64kbit/s) internet connection
 
 ### Desktop-only features
 
@@ -117,5 +117,5 @@ An example can be found in the `example` folder at the root of the repository.
 ### Future
 
 I might add the option to write posts with Markdown. My main goal was the
-ability to write posts with HTML, but as that kinda comes for free, Markdown
-will be an add-on.
+ability to write posts with HTML, but as that basically comes for
+free, Markdown will be an add-on.
