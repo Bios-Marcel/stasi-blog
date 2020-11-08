@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -28,13 +29,36 @@ func main() {
 		os.Exit(0)
 	}()
 
+	port := 8080
+	log.Printf("Serving %s at localhost:%d/%s", *output, port, *basepath)
+	portString := fmt.Sprintf(":%d", port)
+
+	dir := dirWith404Handler{http.Dir(*output)}
 	if *basepath == "" {
-		log.Println("Serving " + *output + " at localhost:8080")
-		fs := http.FileServer(http.Dir(*output))
-		log.Fatal(http.ListenAndServe(":8080", fs))
+		log.Fatal(http.ListenAndServe(portString, http.FileServer(dir)))
 	} else {
-		log.Println("Serving " + *output + " at localhost:8080" + *basepath)
-		http.Handle(*basepath, http.StripPrefix(*basepath, http.FileServer(http.Dir(*output))))
-		log.Fatal(http.ListenAndServe(":8080", nil))
+		http.Handle(*basepath, http.StripPrefix(*basepath, http.FileServer(dir)))
+		log.Fatal(http.ListenAndServe(portString, nil))
 	}
+}
+
+type dirWith404Handler struct {
+	dir http.Dir
+}
+
+// Open implements FileSystem using os.Open, opening files for reading rooted
+// and relative to the directory d. If a file can't be found, we return a 404
+// page instead.
+func (d dirWith404Handler) Open(name string) (http.File, error) {
+	file, err := d.dir.Open(name)
+	if os.IsNotExist(err) {
+		file404, newError := d.dir.Open("404.html")
+		if newError != nil {
+			return nil, newError
+		}
+		//Technically we'd need the old error to indicate 404 to the
+		//browser, but for demo/test purposes, this'll do.
+		return file404, nil
+	}
+	return file, err
 }
