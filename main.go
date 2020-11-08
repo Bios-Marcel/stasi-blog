@@ -224,7 +224,7 @@ func main() {
 	writeTemplateToFile(notFoundSkeleton, &customPageData{
 		pageConfig:  loadedPageConfig,
 		CustomPages: customPages,
-	}, filepath.Join(*output, "404.html"))
+	}, "404.html")
 }
 
 func writeRSSFeed(articles []*indexedArticle, loadedPageConfig pageConfig) {
