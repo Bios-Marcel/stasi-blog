@@ -27,6 +27,8 @@ go run demo/server.go
 
 Then open [localhost:8080](http://localhost:8080).
 
+**DO NOT USE THE DEMO SERVER IN PRODUCTION!**
+
 ## Usage
 
 There's an input and an output folder. Both of these can be specified via
