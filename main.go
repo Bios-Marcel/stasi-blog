@@ -122,18 +122,25 @@ func main() {
 		}
 		articleData.RFC3339Time = publishTime.Format(time.RFC3339)
 		articleData.HumanTime = publishTime.Format(loadedPageConfig.DateFormat)
+		articleData.PodcastAudio = templateToString(specificArticleTemplate.Lookup("podcast-audio"))
+		if articleData.PodcastAudio != "" {
+			if strings.HasPrefix(strings.TrimPrefix(articleData.PodcastAudio, "/"), "media") {
+				articleData.PodcastAudio = path.Join(loadedPageConfig.BasePath, articleData.PodcastAudio)
+			}
+		}
 		articleTargetPath := filepath.Join(outputArticles, article.Name())
 
 		writeTemplateToFile(specificArticleTemplate, articleData, articleTargetPath)
 
 		newIndexedArticle := &indexedArticle{
-			pageConfig:  loadedPageConfig,
-			Title:       templateToString(specificArticleTemplate.Lookup("title")),
-			File:        articleTargetPath,
-			RFC3339Time: publishTime,
-			HumanTime:   publishTime.Format(loadedPageConfig.DateFormat),
-			Content:     templateToString(specificArticleTemplate.Lookup("content")),
-			Tags:        tags,
+			pageConfig:   loadedPageConfig,
+			podcastAudio: templateToString(specificArticleTemplate.Lookup("podcast-audio")),
+			Title:        templateToString(specificArticleTemplate.Lookup("title")),
+			File:         articleTargetPath,
+			RFC3339Time:  publishTime,
+			HumanTime:    publishTime.Format(loadedPageConfig.DateFormat),
+			Content:      templateToString(specificArticleTemplate.Lookup("content")),
+			Tags:         tags,
 		}
 		indexedArticles = append(indexedArticles, newIndexedArticle)
 	}
@@ -238,6 +245,13 @@ func writeRSSFeed(articles []*indexedArticle, loadedPageConfig pageConfig) {
 			Description: article.Description,
 			Created:     article.RFC3339Time,
 		}
+		if article.podcastAudio != "" {
+			newFeedItem.Enclosure = &feeds.Enclosure{
+				Type:   "audio/mp3",
+				Length: "3489909",
+				Url:    path.Join(feed.Link.Href, article.podcastAudio),
+			}
+		}
 		feed.Items = append(feed.Items, newFeedItem)
 		if loadedPageConfig.URL != "" {
 			newFeedItem.Link = &feeds.Link{Href: path.Join(loadedPageConfig.URL, article.File)}
@@ -279,6 +293,8 @@ type articlePageData struct {
 	RFC3339Time string
 	//HumanTime is a human readable time format.
 	HumanTime string
+	//PodcastAudio file link
+	PodcastAudio string
 	//Tags for metadata
 	Tags []string
 	//CustomPages are pages listed in the header next to "Home"
@@ -331,12 +347,13 @@ func templateToOptionalString(temp *template.Template) string {
 
 type indexedArticle struct {
 	pageConfig
-	Title       string
-	File        string
-	RFC3339Time time.Time
-	HumanTime   string
-	Content     string
-	Tags        []string
+	Title        string
+	File         string
+	RFC3339Time  time.Time
+	podcastAudio string
+	HumanTime    string
+	Content      string
+	Tags         []string
 }
 
 func timeFromRFC3339(value string) time.Time {

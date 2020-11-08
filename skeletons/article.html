@@ -17,6 +17,10 @@
 <article>
 <h1>{{template "title"}}</h1>
 <p class="authoring-date">Written on {{.HumanTime}}</p>
+<audio controls>{{if .PodcastAudio}}
+<source src="{{.PodcastAudio}}" type="audio/mp3">
+Your browser is unable to play this audio.
+</audio>{{end}}
 {{template "content" .}}
 {{if .UtterancesRepo}}<script src="https://utteranc.es/client.js"
         repo="{{.UtterancesRepo}}"
