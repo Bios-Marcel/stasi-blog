@@ -215,6 +215,16 @@ func main() {
 	writeRSSFeed(indexedArticles, loadedPageConfig)
 	copyFile("skeletons/base.css", filepath.Join(*output, "base.css"))
 	copy.Copy(filepath.Join(*input, "media"), filepath.Join(*output, "media"))
+
+	notFoundSkeleton, parseError := template.ParseFiles("skeletons/404.html")
+	if parseError != nil {
+		panic(parseError)
+	}
+	addSubTemplates(notFoundSkeleton, baseTemplate)
+	writeTemplateToFile(notFoundSkeleton, &customPageData{
+		pageConfig:  loadedPageConfig,
+		CustomPages: customPages,
+	}, filepath.Join(*output, "404.html"))
 }
 
 func writeRSSFeed(articles []*indexedArticle, loadedPageConfig pageConfig) {
