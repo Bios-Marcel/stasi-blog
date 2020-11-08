@@ -31,10 +31,21 @@ func main() {
 
 	loadedPageConfig := pageConfig{
 		DateFormat: "2 January 2006",
+		UseFavicon: true,
 	}
 	configDecodeError := json.NewDecoder(configFile).Decode(&loadedPageConfig)
 	if configDecodeError != nil {
 		log.Fatalf("Error decoding config: %s\n", configDecodeError)
+	}
+
+	if loadedPageConfig.UseFavicon {
+		faviconSourcePath := filepath.Join(*input, "favicon.ico")
+		_, faviconErr := os.Stat(faviconSourcePath)
+		if faviconErr != nil {
+			panic(faviconErr)
+		} else {
+			copyFile(faviconSourcePath, filepath.Join(*output, "favicon.ico"))
+		}
 	}
 
 	baseTemplate, parseError := template.ParseFiles("skeletons/base.html")
@@ -295,6 +306,7 @@ type pageConfig struct {
 	CreationDate        string
 	UtterancesRepo      string
 	AddOptionalMetaData bool
+	UseFavicon          bool
 }
 
 type customPageEntry struct {

@@ -42,6 +42,7 @@ input
 |--articles          <-- Contains blog posts
 |  |--post-one.html  <-- Example post
 |--config.json       <-- Basic page information
+|--favicon.ico       <-- Icon to show in browser; To disable, set "UseFavicon" to false
 ```
 
 An example for the `config.json`:
@@ -58,6 +59,7 @@ An example for the `config.json`:
    "UtterancesRepo": "github-handle/github-handle.github.io",
    "AddOptionalMetaData": true,
    "DateFormat": "2 January 2006"
+   "UseFavicon": true,
 }
 ```
 
@@ -73,6 +75,7 @@ The date is in RFC3339 format and the following properties are optional:
 - `AddOptionalMetaData` (Add metadata such as tags, description, author and so on)
 - `DateFormat` (Needed for human readable dates later on)
   > [The format requires specific numbers](https://golang.org/pkg/time/#pkg-constants), it's weird.
+- `UseFavicon` (Decides whether to look for a favicon; true by default)
 
 The content of the `pages` folder will be added as stand-alone pages. Those
 will show up in the header of the page and do not offer a comment-section.
