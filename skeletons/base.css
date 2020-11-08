@@ -3,12 +3,6 @@ html{
 /*Sans-Serif fonts */
 font-family: Frutiger, "Frutiger Linotype", Univers, Calibri, "Myriad Pro", Myriad, "DejaVu Sans Condensed", "Liberation Sans", "Nimbus Sans L", Tahoma, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
-article{
-display: inline-block;
-}
-details, footer, .articles{
-display: block;
-}
 body{
 background: #f7f2e3;
 color: #302d2d;
@@ -58,6 +52,7 @@ flex-direction: row;
 }
 .articles{
 flex: 1;
+display: block;
 }
 .article-entry{
 margin-bottom: 1em;
@@ -88,12 +83,20 @@ font-size: 0.8em;
 font-weight: bold;
 font-style: italic;
 }
+article{
+display: inline-block;
+width: 100%;
+}
+audio{
+width: 100%;
+}
 pre{
 overflow-x: auto;
 }
 /* FOOTER */
 footer{
 margin-top: 3em;
+display: block;
 }
 .footer-bar{
 display: flex;
