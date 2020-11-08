@@ -38,6 +38,7 @@ flex-basis: content;
 .site-name{
 margin-top: 0;
 margin-bottom: 0;
+font-size: 2em;
 }
 nav{
 font-size: 1.2em;
