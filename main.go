@@ -123,7 +123,7 @@ func main() {
 		}
 		articleData.RFC3339Time = publishTime.Format(time.RFC3339)
 		articleData.HumanTime = publishTime.Format(loadedPageConfig.DateFormat)
-		articleData.PodcastAudio = templateToString(specificArticleTemplate.Lookup("podcast-audio"))
+		articleData.PodcastAudio = templateToOptionalString(specificArticleTemplate.Lookup("podcast-audio"))
 		if articleData.PodcastAudio != "" {
 			if strings.HasPrefix(strings.TrimPrefix(articleData.PodcastAudio, "/"), "media") {
 				articleData.PodcastAudio = path.Join(loadedPageConfig.BasePath, articleData.PodcastAudio)
@@ -135,7 +135,7 @@ func main() {
 
 		newIndexedArticle := &indexedArticle{
 			pageConfig:   loadedPageConfig,
-			podcastAudio: templateToString(specificArticleTemplate.Lookup("podcast-audio")),
+			podcastAudio: templateToOptionalString(specificArticleTemplate.Lookup("podcast-audio")),
 			Title:        templateToString(specificArticleTemplate.Lookup("title")),
 			File:         articleTargetPath,
 			RFC3339Time:  publishTime,
