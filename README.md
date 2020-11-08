@@ -62,7 +62,7 @@ An example for the `config.json`:
    "CreationDate":"2018-05-27T00:00:00+00:00",
    "UtterancesRepo": "github-handle/github-handle.github.io",
    "AddOptionalMetaData": true,
-   "DateFormat": "2 January 2006"
+   "DateFormat": "2 January 2006",
    "UseFavicon": true,
 }
 ```
