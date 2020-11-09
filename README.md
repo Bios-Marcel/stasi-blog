@@ -5,7 +5,7 @@ A small generator for **sta**tic and **si**mple **blog**s.
 ## Overview
 
 - [Building](#building)
-- [Usaeg](#usage)
+- [Usage](#Usage)
 - [Example](#example)
 - [Features](#features)
 
