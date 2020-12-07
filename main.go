@@ -101,6 +101,10 @@ func main() {
 
 	var indexedArticles []*indexedArticle
 	for _, article := range articles {
+		if !strings.HasSuffix(article.Name(), ".html") {
+			continue
+		}
+
 		newArticleSkeleton, cloneError := articleSkeleton.Clone()
 		if cloneError != nil {
 			panic(cloneError)
