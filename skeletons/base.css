@@ -112,6 +112,7 @@ background: #3b3a3a;
 footer{
 margin-top: 3em;
 display: block;
+margin-bottom: 0.5em;
 }
 .footer-bar{
 display: flex;
