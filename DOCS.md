@@ -33,6 +33,61 @@ Meaning, that this would be enough already:
 {{define "content"}}<p>TEXT</p>{{end}}
 ```
 
+## Tables with a rowhreader
+
+Usually a table is divided into rows and columns, where each column has a
+header and each row holds data. However, there are scenarios where you want
+a table to have both a column header and a row header. You can do this using
+the `trh-table` style class. An example would be:
+
+```html
+<p>Opening times</p>
+
+<table class="trh-table">
+    <!--Column headers-->
+    <tr>
+        <!--Left empty as this cell isn't meant to be used.-->
+        <th></th>
+        <th>Monday</th>
+        <th>Tuesday</th>
+        <th>Wednesday</th>
+        <th>Thursday</th>
+        <th>Friday</th>
+    </tr>
+    <!--Beginning of data-->
+    <tr>
+        <!-- Rowheader cell-->
+        <td>09:00 - 13:00</td>
+        <!-- Data cells-->
+        <td>Open</td>
+        <td>Open</td>
+        <td>Open</td>
+        <td>Open</td>
+        <td>Open</td>
+    </tr>
+    <tr>
+        <!-- Rowheader cell-->
+        <td>13:00 - 14:00</td>
+        <!-- Data cells-->
+        <td>Closed</td>
+        <td>Closed</td>
+        <td>Closed</td>
+        <td>Closed</td>
+        <td>Closed</td>
+    </tr>
+    <tr>
+        <!-- Rowheader cell-->
+        <td>14:00 - 18:00</td>
+        <!-- Data cells-->
+        <td>Open</td>
+        <td>Open</td>
+        <td>Open</td>
+        <td>Open</td>
+        <td>Closed</td>
+    </tr>
+</table>
+```
+
 ## Best practices
 
 ### Image loading
