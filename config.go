@@ -8,11 +8,12 @@ import (
 	"strings"
 )
 
-var input, output *string
+var input, output, config *string
 
 func init() {
 	output = flag.String("output", "output", "defines the output folder")
 	input = flag.String("input", "input", "defines the input folder")
+	config = flag.String("config", "", "defines the config file location")
 	flag.Parse()
 
 	if *output == *input {

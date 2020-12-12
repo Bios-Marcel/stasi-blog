@@ -24,7 +24,13 @@ const outputArticles string = "articles"
 var writtenFiles []string
 
 func main() {
-	configFile, openError := os.Open(filepath.Join(*input, "config.json"))
+	var configPath string
+	if config != nil && *config != "" {
+		configPath = *config
+	} else {
+		configPath = filepath.Join(*input, "config.json")
+	}
+	configFile, openError := os.Open(configPath)
 	if openError != nil {
 		log.Fatalf("Error loading config: %s\n", openError)
 	}
