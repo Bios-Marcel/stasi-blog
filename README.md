@@ -99,6 +99,10 @@ files however will be kept.
 
 An example can be found in the `example` folder at the root of the repository.
 
+## Documentation
+
+More documentation can be found in [DOCS.md](/DOCS.md).
+
 ## Features
 
 - Article overview
@@ -110,11 +114,11 @@ An example can be found in the `example` folder at the root of the repository.
 
 ### Desktop-only features
 
-* Optional `Tags` sidebar + Tag filtering
+- Optional `Tags` sidebar + Tag filtering
 
 ### Feature only available with JS
 
-* Comments via utteranc.es (via GitHub issues)
+- Comments via utteranc.es (via GitHub issues)
 
 ### Future
 
