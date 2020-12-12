@@ -1,22 +1,30 @@
+/* COLORS */
+:root{
+--bg: #f7f2e3;
+--fg: #302d2d;
+--bg-contrast: rgb(231, 226, 226);
+--anchor: #4183C4;
+}
+@media (prefers-color-scheme: dark){
+:root{
+--bg: #2c2c2c;
+--fg: #d5d5d5;
+--bg-contrast: #3b3a3a;
+}
+}
 /* GENERAL */
 html{
 /*Sans-Serif fonts */
 font-family: Frutiger, "Frutiger Linotype", Univers, Calibri, "Myriad Pro", Myriad, "DejaVu Sans Condensed", "Liberation Sans", "Nimbus Sans L", Tahoma, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 body{
-background: #f7f2e3;
-color: #302d2d;
+background: var(--bg);
+color: var(--fg);
 margin: 1em auto auto auto;
 width: 50%;
 }
-@media (prefers-color-scheme: dark){
-body{
-background: #2c2c2c;
-color: #d5d5d5;
-}
-}
 a{
-color: #4183C4;
+color: var(--anchor);
 text-decoration: none;
 }
 /* HEADER */
@@ -87,6 +95,22 @@ article{
 display: inline-block;
 width: 100%;
 }
+table{
+border-collapse: collapse;
+border-spacing: 0;
+}
+.trh-table td:first-child,th:first-child{
+border-right: 1px solid var(--fg);
+}
+th{
+border-bottom: 1px solid var(--fg);
+}
+td,th{
+padding: 0.4em 1.5em 0.4em 1.5em;
+}
+code,code>pre,table{
+background: var(--bg-contrast);
+}
 audio{
 width: 100%;
 }
@@ -94,19 +118,7 @@ pre{
 overflow-x: auto;
 }
 code>pre{
-background: rgb(231, 226, 226);
 padding: 0.5em;
-}
-code{
-background: rgb(231, 226, 226);
-}
-@media (prefers-color-scheme: dark){
-code>pre{
-background: #3b3a3a;
-}
-code{
-background: #3b3a3a;
-}
 }
 /* FOOTER */
 footer{
@@ -128,6 +140,9 @@ margin-right: 2.5%;
 }
 header{
 flex-direction: column;
+}
+td,th{
+padding: 0.2em 0.5em 0.2em 0.5em;
 }
 .menu-link{
 font-size: 1.5em;
