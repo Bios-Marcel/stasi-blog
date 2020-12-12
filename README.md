@@ -101,12 +101,12 @@ An example can be found in the `example` folder at the root of the repository.
 
 ## Features
 
-* Article overview
-* RSS Feed
-* Mobile friendly
-* Automatic Darkmode / Lightmode
-* Custom Pages (Example would be an About page)
-* Fast to load even with a slow (less than 64kbit/s) internet connection
+- Article overview
+- RSS Feed
+- Mobile friendly
+- Automatic Darkmode / Lightmode
+- Custom Pages (Example would be an About page)
+- Fast to load even with a slow (less than 64kbit/s) internet connection
 
 ### Desktop-only features
 
