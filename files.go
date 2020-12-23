@@ -28,13 +28,7 @@ func writeTemplateToFile(sourceTemplate *template.Template, data interface{}, pa
 	}
 }
 
-func copyFile(sourcePath, targetPath string) {
-	source, openError := os.Open(sourcePath)
-	if openError != nil {
-		panic(openError)
-	}
-	defer source.Close()
-
+func copyDataIntoFile(source io.Reader, targetPath string) {
 	target := createFile(targetPath)
 	defer target.Close()
 
@@ -43,6 +37,15 @@ func copyFile(sourcePath, targetPath string) {
 		panic(copyError)
 	}
 	target.Close()
+}
+
+func copyFileByPath(sourcePath, targetPath string) {
+	source, openError := os.Open(sourcePath)
+	if openError != nil {
+		panic(openError)
+	}
+	defer source.Close()
+	copyDataIntoFile(source, targetPath)
 }
 
 func createEmptyDirectory(path string) {
