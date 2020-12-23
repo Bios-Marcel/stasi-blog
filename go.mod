@@ -1,6 +1,6 @@
 module gituhb.com/Bios-Marcel/stasi-blog
 
-go 1.14
+go 1.16
 
 require (
 	github.com/gorilla/feeds v1.1.1
