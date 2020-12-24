@@ -13,7 +13,7 @@ import (
 var output, basepath *string
 
 func init() {
-	output = flag.String("dir", "output", "defines the directory that is being served")
+	output = flag.String("dir", "example-output", "defines the directory that is being served")
 	basepath = flag.String("basepath", "", "specify basepath to simulate remote setup where files aren't at root")
 	flag.Parse()
 }

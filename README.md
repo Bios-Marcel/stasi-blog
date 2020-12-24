@@ -11,21 +11,22 @@ A small generator for **sta**tic and **si**mple **blog**s.
 
 ## Building
 
-First, you need to download Golang.
+First, you need to download Golang version 1.16 or later.
 
-Next, you can execute the following:
+To produce a sefl-contained binary, run:
 
 ```sh
-go run . --input="example"
+go build .
 ```
 
-This will compile all files needed for the page.
-
-To test the output, run:
+To test whether everything works, you can compile and run:
 
 ```sh
+./stasi-blog --input="example" --output="example-output"
 go run demo/server.go
 ```
+
+The executables name is `stasi-blog.exe` on windows.
 
 Then open [localhost:8080](http://localhost:8080).
 
@@ -34,7 +35,7 @@ Then open [localhost:8080](http://localhost:8080).
 ## Usage
 
 There's an input and an output folder. Both of these can be specified via
-respective parameters.
+the respective parameters `input` and `output`.
 
 As for the expect folder structure, the following is expected:
 
