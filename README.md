@@ -37,7 +37,7 @@ Then open [localhost:8080](http://localhost:8080).
 There's an input and an output folder. Both of these can be specified via
 the respective parameters `input` and `output`.
 
-As for the expect folder structure, the following is expected:
+As for the input folder structure, the following is expected:
 
 ```plain
 input
@@ -68,12 +68,12 @@ An example for the `config.json`:
 }
 ```
 
-The date is in RFC3339 format and the following properties are optional:
+The following properties are optional:
 
 - `BasePath` (Needed if files aren't served at domain-root)
 - `Author` (Used for metadata/RSS)
 - `URL` (Used for metadata/RSS)
-- `Description` (Used for metadata/RSS)
+- `Description` (Used for metadata/RSS; RFC3339 format)
 - `Email` (Used for RSS)
 - `CreationDate` (Used for metadata/RSS)
 - `UtterancesRepo` (Needed for comments)
