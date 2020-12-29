@@ -52,7 +52,7 @@ func main() {
 		faviconSourcePath := filepath.Join(*input, "favicon.ico")
 		_, faviconErr := os.Stat(faviconSourcePath)
 		if faviconErr != nil {
-			panic(faviconErr)
+			log.Fatalln("favicon.ico couldn't be found. If you don't want to use a favicon, set 'UseFavicon' to 'false'.")
 		} else {
 			copyFileByPath(faviconSourcePath, filepath.Join(*output, "favicon.ico"))
 		}
