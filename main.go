@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -297,12 +298,12 @@ func writeRSSFeed(articles []*indexedArticle, loadedPageConfig pageConfig) {
 			newFeedItem.Enclosure = &feeds.Enclosure{
 				Type:   "audio/mp3",
 				Length: strconv.FormatInt(audioFile.Size(), 10),
-				Url:    path.Join(feed.Link.Href, article.podcastAudio),
+				Url:    joinURLParts(feed.Link.Href, article.podcastAudio),
 			}
 		}
 		feed.Items = append(feed.Items, newFeedItem)
 		if loadedPageConfig.URL != "" {
-			newFeedItem.Link = &feeds.Link{Href: path.Join(loadedPageConfig.URL, article.File)}
+			newFeedItem.Link = &feeds.Link{Href: joinURLParts(loadedPageConfig.URL, article.File)}
 		}
 	}
 
@@ -315,6 +316,21 @@ func writeRSSFeed(articles []*indexedArticle, loadedPageConfig pageConfig) {
 	if writeError != nil {
 		panic(writeError)
 	}
+}
+
+// joinURLParts puts together two URL pieces without duplicating separators
+// or removing separators. Before, this was done by path.Join directly which
+// caused the resulting URL to be missing a forward slash behind the protocol.
+// Using filepath.Join would cause incorrect separators on windows, as URLs
+// should always use forward slashes, but windows uses backward slashes.
+func joinURLParts(partOne, partTwo string) string {
+	url, parseError := url.Parse(partOne)
+	if parseError != nil {
+		panic(parseError)
+	}
+
+	url.Path = path.Join(url.Path, partTwo)
+	return url.String()
 }
 
 type pageConfig struct {
