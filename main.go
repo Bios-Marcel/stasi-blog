@@ -111,6 +111,9 @@ func main() {
 
 	var indexedArticles []*indexedArticle
 	for _, article := range articles {
+		//Other files are ignored. For example I use this to create
+		//.html-draft files which are posts that I don't want to publish
+		//yet, but still have in the blog source directory.
 		if !strings.HasSuffix(article.Name(), ".html") {
 			continue
 		}
