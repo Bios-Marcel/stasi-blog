@@ -11,9 +11,9 @@
 {{/* Avoids favicon request or adds favicon */}}
 <link rel="icon" href="{{if .UseFavicon}}{{.BasePath}}/favicon.ico{{else}}data:,{{end}}"/>{{end}}
 
-{{define "base-metadata"}}<meta content='text/html; charset=utf-8' http-equiv='Content-Type'/>
+{{define "base-metadata"}}<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>{{end}}
-{{define "opt-metadata"}}<meta charset="UTF-8"/>{{if .Author}}
+{{define "opt-metadata"}}{{if .Author}}
 <meta name="author" content="{{.Author}}"/>{{end}}{{if .Description}}
 <meta name="description" content="{{.Description}}" />{{end}}
 <meta property="og:locale" content="en_GB"/>
