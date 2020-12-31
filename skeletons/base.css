@@ -2,7 +2,7 @@
 :root{
 --bg: #f7f2e3;
 --fg: #302d2d;
---bg-contrast: rgb(231, 226, 226);
+--bg-contrast: #e7e2e2;
 --anchor: #4183C4;
 }
 @media (prefers-color-scheme: dark){
