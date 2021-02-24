@@ -52,7 +52,7 @@ func createDirectory(path string) {
 	_, statError := os.Stat(path)
 	if statError != nil {
 		if os.IsNotExist(statError) {
-			articlesMkdirError := os.Mkdir(path, 0755)
+			articlesMkdirError := os.MkdirAll(path, 0755)
 			if articlesMkdirError != nil {
 				panic(articlesMkdirError)
 			}
