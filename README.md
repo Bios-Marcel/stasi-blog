@@ -96,6 +96,12 @@ specified as output, which is `./output` by default. All data that was
 previously written to the output folder will be deleted. Manually created
 files however will be kept.
 
+To view all available parameters, run:
+
+```shell
+go run . --help
+```
+
 ## Example
 
 An example can be found in the `example` folder at the root of the repository.
