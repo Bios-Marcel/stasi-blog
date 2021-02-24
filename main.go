@@ -82,7 +82,7 @@ func main() {
 		}
 	}
 
-	baseTemplate, parseError := template.ParseFS(skeletonFS, "skeletons/base.html")
+	parsedTemplates, parseError := template.ParseFS(skeletonFS, "skeletons/*.html")
 	if parseError != nil {
 		panic(parseError)
 	}
@@ -92,16 +92,10 @@ func main() {
 		panic(readError)
 	}
 
-	customPageSkeleton, parseError := template.ParseFS(skeletonFS, "skeletons/page.html")
-	if parseError != nil {
-		panic(parseError)
-	}
-	addSubTemplates(customPageSkeleton, baseTemplate)
-
 	customPageTemplates := make(map[string]*template.Template)
 	var customPages []*customPageEntry
 	for _, customPage := range customPageFiles {
-		customPageSkeletonClone, cloneError := customPageSkeleton.Clone()
+		customPageSkeletonClone, cloneError := parsedTemplates.Lookup("page").Clone()
 		if cloneError != nil {
 			panic(cloneError)
 		}
@@ -121,13 +115,6 @@ func main() {
 		})
 	}
 
-	articleSkeleton, parseError := template.ParseFS(skeletonFS, "skeletons/article.html")
-	if parseError != nil {
-		panic(parseError)
-	}
-
-	addSubTemplates(articleSkeleton, baseTemplate)
-
 	articles, readError := ioutil.ReadDir(filepath.Join(*input, "articles"))
 	if readError != nil {
 		panic(readError)
@@ -142,7 +129,7 @@ func main() {
 			continue
 		}
 
-		newArticleSkeleton, cloneError := articleSkeleton.Clone()
+		newArticleSkeleton, cloneError := parsedTemplates.Lookup("article").Clone()
 		if cloneError != nil {
 			panic(cloneError)
 		}
@@ -228,14 +215,8 @@ func main() {
 		}, fileName)
 	}
 
-	indexSkeleton, parseError := template.ParseFS(skeletonFS, "skeletons/index.html")
-	if parseError != nil {
-		panic(parseError)
-	}
-	addSubTemplates(indexSkeleton, baseTemplate)
-
 	//Main Index with all articles.
-	writeTemplateToFile(indexSkeleton, &indexData{
+	writeTemplateToFile(parsedTemplates.Lookup("index"), &indexData{
 		pageConfig:      loadedPageConfig,
 		Tags:            tags,
 		CustomPages:     customPages,
@@ -255,7 +236,7 @@ func main() {
 			}
 		}
 
-		writeTemplateToFile(indexSkeleton, &indexData{
+		writeTemplateToFile(parsedTemplates.Lookup("index"), &indexData{
 			pageConfig:      loadedPageConfig,
 			Tags:            tags,
 			FilterTag:       tag,
@@ -283,12 +264,7 @@ func main() {
 
 	copy.Copy(filepath.Join(*input, "media"), filepath.Join(*output, "media"))
 
-	notFoundSkeleton, parseError := template.ParseFS(skeletonFS, "skeletons/404.html")
-	if parseError != nil {
-		panic(parseError)
-	}
-	addSubTemplates(notFoundSkeleton, baseTemplate)
-	writeTemplateToFile(notFoundSkeleton, &customPageData{
+	writeTemplateToFile(parsedTemplates.Lookup("404"), &customPageData{
 		pageConfig:  loadedPageConfig,
 		CustomPages: customPages,
 	}, "404.html")
@@ -415,15 +391,6 @@ type indexData struct {
 	CustomPages []*customPageEntry
 	//IndexedArticles are the articles to display.
 	IndexedArticles []*indexedArticle
-}
-
-func addSubTemplates(targetTemplate *template.Template, sourceTemplates *template.Template) {
-	for _, subTemplate := range sourceTemplates.Templates() {
-		_, addError := targetTemplate.AddParseTree(subTemplate.Name(), subTemplate.Tree)
-		if addError != nil {
-			panic(addError)
-		}
-	}
 }
 
 func templateToString(temp *template.Template) string {
