@@ -270,7 +270,17 @@ func main() {
 	if fsError != nil {
 		panic(fsError)
 	}
-	copyDataIntoFile(baseCSSFile, filepath.Join(*output, "base.css"))
+
+	if *minifyOutput {
+		baseCSSOutput := createFile(filepath.Join(*output, "base.css"))
+		minifyError := minifier.Minify("text/css", baseCSSOutput, baseCSSFile)
+		if minifyError != nil {
+			panic(minifyError)
+		}
+	} else {
+		copyDataIntoFile(baseCSSFile, filepath.Join(*output, "base.css"))
+	}
+
 	copy.Copy(filepath.Join(*input, "media"), filepath.Join(*output, "media"))
 
 	notFoundSkeleton, parseError := template.ParseFS(skeletonFS, "skeletons/404.html")

@@ -1,11 +1,27 @@
 package main
 
 import (
+	"bytes"
 	"html/template"
 	"io"
 	"os"
 	"path/filepath"
+
+	minify "github.com/tdewolff/minify/v2"
+	cssminify "github.com/tdewolff/minify/v2/css"
+	htmlminify "github.com/tdewolff/minify/v2/html"
 )
+
+var minifier = minify.New()
+
+func init() {
+	minifier.AddFunc("text/css", cssminify.Minify)
+	minifier.Add("text/html", &htmlminify.Minifier{
+		KeepDocumentTags: true,
+		KeepQuotes:       true,
+		KeepEndTags:      true,
+	})
+}
 
 func createFile(path string) *os.File {
 	_, statError := os.Stat(path)
@@ -21,10 +37,24 @@ func createFile(path string) *os.File {
 }
 
 func writeTemplateToFile(sourceTemplate *template.Template, data interface{}, path string) {
-	file := createFile(filepath.Join(*output, path))
-	executeError := sourceTemplate.Execute(file, data)
-	if executeError != nil {
-		panic(executeError)
+	var file io.Writer = createFile(filepath.Join(*output, path))
+	if *minifyOutput {
+		//minify.Writer sadly doesn't work, the files end up empty.
+		templateBuffer := &bytes.Buffer{}
+		executeError := sourceTemplate.Execute(templateBuffer, data)
+		if executeError != nil {
+			panic(executeError)
+		}
+
+		minifyError := minifier.Minify("text/html", file, templateBuffer)
+		if minifyError != nil {
+			panic(minifyError)
+		}
+	} else {
+		executeError := sourceTemplate.Execute(file, data)
+		if executeError != nil {
+			panic(executeError)
+		}
 	}
 }
 
