@@ -38,14 +38,12 @@ flex: 1;
 flex-basis: content;
 }
 .site-name{
-margin-top: 0;
-margin-bottom: 0;
+margin: 0;
 font-size: 2em;
 }
 nav{
 font-size: 1.2em;
-column-gap: 1em;
-row-gap: 0.3em;
+gap: 0.3em 1em;
 display: flex;
 flex-wrap: wrap;
 margin: auto 0 auto 0;
@@ -66,8 +64,7 @@ display: block;
 margin-bottom: 1em;
 }
 .article-title{
-margin-top: 0;
-margin-bottom: 0;
+margin: 0;
 }
 .article-tag + .article-tag::before{
 content: ", ";
