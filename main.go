@@ -23,7 +23,12 @@ import (
 const outputCustomPages string = "pages"
 const outputArticles string = "articles"
 
-var writtenFiles []string
+var (
+	//go:embed skeletons/*
+	skeletonFS embed.FS
+
+	writtenFiles []string
+)
 
 func main() {
 	var configPath string
@@ -58,9 +63,6 @@ func main() {
 	createDirectory(filepath.Join(*output, "articles"))
 	createDirectory(filepath.Join(*output, "pages"))
 
-	//go:embed skeletons/*
-	var skeletons embed.FS
-
 	loadedPageConfig := pageConfig{
 		DateFormat: "2 January 2006",
 		UseFavicon: true,
@@ -80,7 +82,7 @@ func main() {
 		}
 	}
 
-	baseTemplate, parseError := template.ParseFS(skeletons, "skeletons/base.html")
+	baseTemplate, parseError := template.ParseFS(skeletonFS, "skeletons/base.html")
 	if parseError != nil {
 		panic(parseError)
 	}
@@ -90,7 +92,7 @@ func main() {
 		panic(readError)
 	}
 
-	customPageSkeleton, parseError := template.ParseFS(skeletons, "skeletons/page.html")
+	customPageSkeleton, parseError := template.ParseFS(skeletonFS, "skeletons/page.html")
 	if parseError != nil {
 		panic(parseError)
 	}
@@ -119,7 +121,7 @@ func main() {
 		})
 	}
 
-	articleSkeleton, parseError := template.ParseFS(skeletons, "skeletons/article.html")
+	articleSkeleton, parseError := template.ParseFS(skeletonFS, "skeletons/article.html")
 	if parseError != nil {
 		panic(parseError)
 	}
@@ -226,7 +228,7 @@ func main() {
 		}, fileName)
 	}
 
-	indexSkeleton, parseError := template.ParseFS(skeletons, "skeletons/index.html")
+	indexSkeleton, parseError := template.ParseFS(skeletonFS, "skeletons/index.html")
 	if parseError != nil {
 		panic(parseError)
 	}
@@ -264,14 +266,14 @@ func main() {
 
 	writeRSSFeed(indexedArticles, loadedPageConfig)
 
-	baseCSSFile, fsError := skeletons.Open("skeletons/base.css")
+	baseCSSFile, fsError := skeletonFS.Open("skeletons/base.css")
 	if fsError != nil {
 		panic(fsError)
 	}
 	copyDataIntoFile(baseCSSFile, filepath.Join(*output, "base.css"))
 	copy.Copy(filepath.Join(*input, "media"), filepath.Join(*output, "media"))
 
-	notFoundSkeleton, parseError := template.ParseFS(skeletons, "skeletons/404.html")
+	notFoundSkeleton, parseError := template.ParseFS(skeletonFS, "skeletons/404.html")
 	if parseError != nil {
 		panic(parseError)
 	}
