@@ -47,6 +47,7 @@ func main() {
 	os.RemoveAll(filepath.Join(*output, "articles"))
 	os.RemoveAll(filepath.Join(*output, "pages"))
 	os.Remove(filepath.Join(*output, "favicon.ico"))
+	os.Remove(filepath.Join(*output, "favicon.png"))
 	os.Remove(filepath.Join(*output, "base.css"))
 	os.Remove(filepath.Join(*output, "404.html"))
 	os.Remove(filepath.Join(*output, "feed.xml"))
@@ -73,12 +74,18 @@ func main() {
 	}
 
 	if loadedPageConfig.UseFavicon {
-		faviconSourcePath := filepath.Join(*input, "favicon.ico")
-		_, faviconErr := os.Stat(faviconSourcePath)
-		if faviconErr != nil {
-			log.Fatalln("favicon.ico couldn't be found. If you don't want to use a favicon, set 'UseFavicon' to 'false'.")
+		faviconIcoSourcePath := filepath.Join(*input, "favicon.ico")
+		_, faviconIcoErr := os.Stat(faviconIcoSourcePath)
+		if faviconIcoErr != nil {
+			faviconPngSourcePath := filepath.Join(*input, "favicon.png")
+			_, faviconPngErr := os.Stat(faviconPngSourcePath)
+			if faviconPngErr != nil {
+				log.Fatalln("favicon.ico/png couldn't be found. If you don't want to use a favicon, set 'UseFavicon' to 'false'.")
+			} else {
+				copyFileByPath(faviconPngSourcePath, filepath.Join(*output, "favicon.png"))
+			}
 		} else {
-			copyFileByPath(faviconSourcePath, filepath.Join(*output, "favicon.ico"))
+			copyFileByPath(faviconIcoSourcePath, filepath.Join(*output, "favicon.ico"))
 		}
 	}
 
