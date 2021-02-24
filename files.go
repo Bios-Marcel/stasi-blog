@@ -48,7 +48,7 @@ func copyFileByPath(sourcePath, targetPath string) {
 	copyDataIntoFile(source, targetPath)
 }
 
-func createEmptyDirectory(path string) {
+func createDirectory(path string) {
 	_, statError := os.Stat(path)
 	if statError != nil {
 		if os.IsNotExist(statError) {

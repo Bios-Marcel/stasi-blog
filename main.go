@@ -37,6 +37,27 @@ func main() {
 		log.Fatalf("Error loading config: %s\n", openError)
 	}
 
+	//Delete old data
+	os.RemoveAll(filepath.Join(*output, "media"))
+	os.RemoveAll(filepath.Join(*output, "articles"))
+	os.RemoveAll(filepath.Join(*output, "pages"))
+	os.Remove(filepath.Join(*output, "favicon.ico"))
+	os.Remove(filepath.Join(*output, "base.css"))
+	os.Remove(filepath.Join(*output, "404.html"))
+	os.Remove(filepath.Join(*output, "feed.xml"))
+	files, globError := filepath.Glob(filepath.Join(*output, "index*.html"))
+	if globError != nil {
+		panic(globError)
+	}
+	for _, indexToDelete := range files {
+		os.Remove(indexToDelete)
+	}
+
+	//Create empty directories
+	createDirectory(filepath.Join(*output, "media"))
+	createDirectory(filepath.Join(*output, "articles"))
+	createDirectory(filepath.Join(*output, "pages"))
+
 	//go:embed skeletons/*
 	var skeletons embed.FS
 
