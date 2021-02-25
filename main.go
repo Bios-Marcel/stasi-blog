@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -94,9 +95,13 @@ func main() {
 		panic(parseError)
 	}
 
-	customPageFiles, readError := ioutil.ReadDir(filepath.Join(*input, "pages"))
-	if readError != nil {
-		panic(readError)
+	customPageFiles, pagesFolderError := ioutil.ReadDir(filepath.Join(*input, "pages"))
+	if pagesFolderError != nil {
+		if os.IsNotExist(pagesFolderError) {
+			log.Println("pages folder couldn't be found and therefore couldn't handled")
+		} else {
+			panic(fmt.Sprintf("Error handling pages folder: %s", pagesFolderError))
+		}
 	}
 
 	customPageTemplates := make(map[string]*template.Template)
@@ -122,9 +127,9 @@ func main() {
 		})
 	}
 
-	articles, readError := ioutil.ReadDir(filepath.Join(*input, "articles"))
-	if readError != nil {
-		panic(readError)
+	articles, pagesFolderError := ioutil.ReadDir(filepath.Join(*input, "articles"))
+	if pagesFolderError != nil {
+		panic(pagesFolderError)
 	}
 
 	var indexedArticles []*indexedArticle
@@ -269,7 +274,14 @@ func main() {
 		copyDataIntoFile(baseCSSFile, filepath.Join(*output, "base.css"))
 	}
 
-	copy.Copy(filepath.Join(*input, "media"), filepath.Join(*output, "media"))
+	mediaCopyError := copy.Copy(filepath.Join(*input, "media"), filepath.Join(*output, "media"))
+	if mediaCopyError != nil {
+		if os.IsNotExist(mediaCopyError) {
+			log.Println("media folder couldn't be found and therefore couldn't be copied")
+		} else {
+			panic(fmt.Sprintf("Error copying media folder: %s", mediaCopyError))
+		}
+	}
 
 	writeTemplateToFile(parsedTemplates.Lookup("404"), &customPageData{
 		pageConfig:  loadedPageConfig,
