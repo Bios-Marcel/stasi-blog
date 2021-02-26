@@ -48,7 +48,7 @@ So the structure of that folder should now look like this:
 |--articles
 |  |--post-one.html
 |--config.json
-|--favicon.ico
+|--favicon.ico/png
 |--README.md
 ```
 
@@ -56,7 +56,7 @@ Next you run `stasi-blog`:
 
 ```
 cd ~/home/user/blog-source
-stasi-blog --output="../blog"
+stasi-blog build ./ --output="../blog"
 ```
 
 This will produce the webpage on your computer. All that's left, is to move

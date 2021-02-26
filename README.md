@@ -22,8 +22,8 @@ go build .
 To test whether everything works, you can compile and run:
 
 ```sh
-./stasi-blog --input="example" --output="example-output"
-go run demo/server.go
+./stasi-blog build ./example --output="example-output"
+./stasi-blog serve ./example
 ```
 
 The executables name is `stasi-blog.exe` on windows.
@@ -47,7 +47,7 @@ input
 |--articles          <-- Contains blog posts
 |  |--post-one.html  <-- Example post
 |--config.json       <-- Basic page information
-|--favicon.ico       <-- Icon to show in browser; To disable, set "UseFavicon" to false
+|--favicon.ico/png   <-- Icon to show in browser; To disable, set "UseFavicon" to false
 ```
 
 An example for the `config.json`:
@@ -99,7 +99,7 @@ files however will be kept.
 To view all available parameters, run:
 
 ```shell
-go run . --help
+./stasi-blog --help
 ```
 
 ## Example
