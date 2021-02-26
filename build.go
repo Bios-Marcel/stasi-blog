@@ -37,6 +37,9 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		log.Fatalf("Error loading config: %s\n", openError)
 	}
 
+	if *verbose {
+		showInfo("Clearing output directory.")
+	}
 	//Delete old data
 	os.RemoveAll(filepath.Join(output, "media"))
 	os.RemoveAll(filepath.Join(output, "articles"))
@@ -48,7 +51,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 	os.Remove(filepath.Join(output, "feed.xml"))
 	files, globError := filepath.Glob(filepath.Join(output, "index*.html"))
 	if globError != nil {
-		panic(globError)
+		exitWithError("Couldn't delete old index*.html files", globError.Error())
 	}
 	for _, indexToDelete := range files {
 		os.Remove(indexToDelete)
@@ -86,15 +89,17 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 
 	parsedTemplates, parseError := template.ParseFS(skeletonFS, "skeletons/*.html")
 	if parseError != nil {
-		panic(parseError)
+		exitWithError("Couldn't parse HTML templates", parseError.Error())
 	}
 
 	customPageFiles, pagesFolderError := ioutil.ReadDir(filepath.Join(sourceFolder, "pages"))
 	if pagesFolderError != nil {
 		if os.IsNotExist(pagesFolderError) {
-			log.Println("pages folder couldn't be found and therefore couldn't handled")
+			if *verbose {
+				showWarning("pages directory couldn't be found and therefore couldn't be handled.")
+			}
 		} else {
-			panic(fmt.Sprintf("Error handling pages folder: %s", pagesFolderError))
+			exitWithError("Couldn't handle pages directory", pagesFolderError.Error())
 		}
 	}
 
@@ -103,13 +108,13 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 	for _, customPage := range customPageFiles {
 		customPageSkeletonClone, cloneError := parsedTemplates.Lookup("page").Clone()
 		if cloneError != nil {
-			panic(cloneError)
+			exitWithError("Couldn't clone page template", cloneError.Error())
 		}
 
 		sourcePath := filepath.Join(sourceFolder, "pages", customPage.Name())
 		customPageTemplate, parseError := customPageSkeletonClone.ParseFiles(sourcePath)
 		if parseError != nil {
-			panic(parseError)
+			exitWithError(fmt.Sprintf("Couldn't parse custom page '%s'", customPage), cloneError.Error())
 		}
 
 		newCustomPageFileName := filepath.Join("pages", customPage.Name())
@@ -121,11 +126,14 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		})
 	}
 
-	articles, pagesFolderError := ioutil.ReadDir(filepath.Join(sourceFolder, "articles"))
-	if pagesFolderError != nil {
-		panic(pagesFolderError)
+	articles, articlesReadError := ioutil.ReadDir(filepath.Join(sourceFolder, "articles"))
+	if articlesReadError != nil {
+		exitWithError("Couldn't read source articles", articlesReadError.Error())
 	}
 
+	if *verbose {
+		showInfo("Indexing and writing articles.")
+	}
 	var indexedArticles []*indexedArticle
 	for _, article := range articles {
 		//Other files are ignored. For example I use this to create
@@ -137,12 +145,12 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 
 		newArticleSkeleton, cloneError := parsedTemplates.Lookup("article").Clone()
 		if cloneError != nil {
-			panic(cloneError)
+			exitWithError("Couldn't clone article template", cloneError.Error())
 		}
 		sourcePath := filepath.Join(sourceFolder, "articles", article.Name())
 		specificArticleTemplate, parseError := newArticleSkeleton.ParseFiles(sourcePath)
 		if parseError != nil {
-			panic(parseError)
+			exitWithError(fmt.Sprintf("Couldn't parse article '%s'", article), cloneError.Error())
 		}
 		articleData := &articlePageData{
 			pageConfig:  loadedPageConfig,
@@ -162,9 +170,10 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 			})
 		}
 		articleData.Tags = tags
-		publishTime, timeParseError := time.Parse("2006-01-02", templateToString(specificArticleTemplate.Lookup("date")))
+		dateAsString := templateToString(specificArticleTemplate.Lookup("date"))
+		publishTime, timeParseError := time.Parse("2006-01-02", dateAsString)
 		if timeParseError != nil {
-			panic(timeParseError)
+			exitWithError(fmt.Sprintf("Couldn't parse date '%s'", dateAsString), timeParseError.Error())
 		}
 		articleData.RFC3339Time = publishTime.Format(time.RFC3339)
 		articleData.HumanTime = publishTime.Format(loadedPageConfig.DateFormat)
@@ -213,6 +222,9 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		}
 	}
 
+	if *verbose {
+		showInfo("Writing custom pages.")
+	}
 	//We first populate the custom page array so that the pages all have a correct menu header.
 	for fileName, customPageTemplate := range customPageTemplates {
 		writeTemplateToFile(customPageTemplate, &customPageData{
@@ -221,6 +233,9 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		}, output, fileName, minifyOutput)
 	}
 
+	if *verbose {
+		showInfo("Writing main index (index.html).")
+	}
 	//Main Index with all articles.
 	writeTemplateToFile(parsedTemplates.Lookup("index"), &indexData{
 		pageConfig:      loadedPageConfig,
@@ -229,6 +244,9 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		IndexedArticles: indexedArticles,
 	}, output, "index.html", minifyOutput)
 
+	if *verbose {
+		showInfo("Writing tagged index files.")
+	}
 	//Special Index-Files with tag-filters
 	for _, tag := range tags {
 		var tagFilteredArticles []*indexedArticle
@@ -251,32 +269,49 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		}, output, "index-tag-"+tag+".html", minifyOutput)
 	}
 
+	if *verbose {
+		showInfo("Writing RSS feed.")
+	}
 	writeRSSFeed(sourceFolder, output, indexedArticles, loadedPageConfig)
 
 	baseCSSFile, fsError := skeletonFS.Open("skeletons/base.css")
 	if fsError != nil {
-		panic(fsError)
+		exitWithError("Couldn't read base.css", fsError.Error())
 	}
 
 	if minifyOutput {
 		baseCSSOutput := createFile(filepath.Join(output, "base.css"))
+		if *verbose {
+			showInfo("Copying and minifying base.css.")
+		}
 		minifyError := minifier.Minify("text/css", baseCSSOutput, baseCSSFile)
 		if minifyError != nil {
-			panic(minifyError)
+			exitWithError("Couldn't minify base.css", minifyError.Error())
 		}
 	} else {
+		if *verbose {
+			showInfo("Copying base.css.")
+		}
 		copyDataIntoFile(baseCSSFile, filepath.Join(output, "base.css"))
 	}
 
+	if *verbose {
+		showInfo("Copying media directory.")
+	}
 	mediaCopyError := copy.Copy(filepath.Join(sourceFolder, "media"), filepath.Join(output, "media"))
 	if mediaCopyError != nil {
 		if os.IsNotExist(mediaCopyError) {
-			log.Println("media folder couldn't be found and therefore couldn't be copied")
+			if *verbose {
+				showWarning("media directory couldn't be found and therefore couldn't be copied.")
+			}
 		} else {
-			panic(fmt.Sprintf("Error copying media folder: %s", mediaCopyError))
+			exitWithError("Couldn't copy media directory", pagesFolderError.Error())
 		}
 	}
 
+	if *verbose {
+		showInfo("Writing 404.html")
+	}
 	writeTemplateToFile(parsedTemplates.Lookup("404"), &customPageData{
 		pageConfig:  loadedPageConfig,
 		CustomPages: customPages,
@@ -313,30 +348,39 @@ func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle,
 			Created:     article.RFC3339Time,
 		}
 		if article.podcastAudio != "" {
-			audioFile, statError := os.Stat(filepath.Join(sourceFolder, article.podcastAudio))
+			audioFilepath := filepath.Join(sourceFolder, article.podcastAudio)
+			audioFile, statError := os.Stat(audioFilepath)
 			if statError != nil {
-				panic(statError)
+				exitWithError(fmt.Sprintf("Couldn't read podcast audio file '%s'", audioFilepath), statError.Error())
+			}
+			audioURL, joinError := joinURLParts(feed.Link.Href, article.podcastAudio)
+			if joinError != nil {
+				exitWithError("Couldn't generate audio URL", joinError.Error())
 			}
 			newFeedItem.Enclosure = &feeds.Enclosure{
 				Type:   "audio/mp3",
 				Length: strconv.FormatInt(audioFile.Size(), 10),
-				Url:    joinURLParts(feed.Link.Href, article.podcastAudio),
+				Url:    audioURL,
 			}
 		}
 		feed.Items = append(feed.Items, newFeedItem)
 		if loadedPageConfig.URL != "" {
-			newFeedItem.Link = &feeds.Link{Href: joinURLParts(loadedPageConfig.URL, article.File)}
+			articleURL, joinError := joinURLParts(loadedPageConfig.URL, article.File)
+			if joinError != nil {
+				exitWithError("Couldn't generate article URL", joinError.Error())
+			}
+			newFeedItem.Link = &feeds.Link{Href: articleURL}
 		}
 	}
 
 	rssFile := createFile(filepath.Join(outputFolder, "feed.xml"))
 	rssData, rssError := feed.ToRss()
 	if rssError != nil {
-		panic(rssData)
+		exitWithError("Couldn't generate RSS feed", rssError.Error())
 	}
 	_, writeError := rssFile.WriteString(rssData)
 	if writeError != nil {
-		panic(writeError)
+		exitWithError("Couldn't write RSS feed", writeError.Error())
 	}
 }
 
@@ -345,14 +389,14 @@ func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle,
 // caused the resulting URL to be missing a forward slash behind the protocol.
 // Using filepath.Join would cause incorrect separators on windows, as URLs
 // should always use forward slashes, but windows uses backward slashes.
-func joinURLParts(partOne, partTwo string) string {
+func joinURLParts(partOne, partTwo string) (string, error) {
 	url, parseError := url.Parse(partOne)
 	if parseError != nil {
-		panic(parseError)
+		return "", parseError
 	}
 
 	url.Path = path.Join(url.Path, partTwo)
-	return url.String()
+	return url.String(), nil
 }
 
 type pageConfig struct {
@@ -410,7 +454,7 @@ func templateToString(temp *template.Template) string {
 	buffer := &bytes.Buffer{}
 	executionError := temp.Execute(buffer, nil)
 	if executionError != nil {
-		panic(executionError)
+		exitWithError(fmt.Sprintf("Couldn't execute template '%s'", temp.Name()), executionError.Error())
 	}
 	return buffer.String()
 }
@@ -437,7 +481,7 @@ type indexedArticle struct {
 func timeFromRFC3339(value string) time.Time {
 	time, timeParseError := time.Parse(time.RFC3339, value)
 	if timeParseError != nil {
-		panic(timeParseError)
+		exitWithError(fmt.Sprintf("Couldn't parse time '%s'. Format must match RFC3339", value), timeParseError.Error())
 	}
 	return time
 }

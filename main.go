@@ -6,8 +6,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var verbose = new(bool)
+
 func main() {
 	rootCmd := cobra.Command{}
+	rootCmd.PersistentFlags().BoolVarP(verbose, "verbose", "v", false, "Decides whether additional, potentially unnecessary extra information, is printed to the terminal.")
 	rootCmd.AddCommand(generateBuildCmd())
 	rootCmd.AddCommand(generateServeCmd())
 	rootCmd.Execute()
@@ -27,7 +30,7 @@ func generateBuildCmd() *cobra.Command {
 	buildCmd.Run = func(cmd *cobra.Command, args []string) {
 		source := args[0]
 		if source == *output {
-			fmt.Println("Source and output can't be the same.")
+			fmt.Println("Error: Source and output can't be the same.")
 		} else {
 			build(source, *output, *config, *minifyOutput)
 		}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io"
 	"os"
@@ -30,30 +31,31 @@ func createFile(path string) *os.File {
 	}
 	file, fileError := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0400)
 	if fileError != nil {
-		panic(fileError)
+		exitWithError(fmt.Sprintf("Couldn't create file '%s'", path), fileError.Error())
 	}
 
 	return file
 }
 
 func writeTemplateToFile(sourceTemplate *template.Template, data interface{}, outputFolder, path string, minifyOutput bool) {
-	var file io.Writer = createFile(filepath.Join(outputFolder, path))
+	filePath := filepath.Join(outputFolder, path)
+	var file io.Writer = createFile(filePath)
 	if minifyOutput {
 		//minify.Writer sadly doesn't work, the files end up empty.
 		templateBuffer := &bytes.Buffer{}
 		executeError := sourceTemplate.Execute(templateBuffer, data)
 		if executeError != nil {
-			panic(executeError)
+			exitWithError(fmt.Sprintf("Couldn't execute template '%s'", sourceTemplate.Name()), executeError.Error())
 		}
 
 		minifyError := minifier.Minify("text/html", file, templateBuffer)
 		if minifyError != nil {
-			panic(minifyError)
+			exitWithError(fmt.Sprintf("Couldn't minify file '%s'", filePath), minifyError.Error())
 		}
 	} else {
 		executeError := sourceTemplate.Execute(file, data)
 		if executeError != nil {
-			panic(executeError)
+			exitWithError(fmt.Sprintf("Couldn't execute template '%s'", sourceTemplate.Name()), executeError.Error())
 		}
 	}
 }
@@ -64,7 +66,7 @@ func copyDataIntoFile(source io.Reader, targetPath string) {
 
 	_, copyError := io.Copy(target, source)
 	if copyError != nil {
-		panic(copyError)
+		exitWithError(fmt.Sprintf("Couldn't copy data into file '%s'", targetPath), copyError.Error())
 	}
 	target.Close()
 }
@@ -72,7 +74,7 @@ func copyDataIntoFile(source io.Reader, targetPath string) {
 func copyFileByPath(sourcePath, targetPath string) {
 	source, openError := os.Open(sourcePath)
 	if openError != nil {
-		panic(openError)
+		exitWithError(fmt.Sprintf("Couldn't copy file '%s' to '%s'", sourcePath, targetPath), openError.Error())
 	}
 	defer source.Close()
 	copyDataIntoFile(source, targetPath)
@@ -82,12 +84,12 @@ func createDirectory(path string) {
 	_, statError := os.Stat(path)
 	if statError != nil {
 		if os.IsNotExist(statError) {
-			articlesMkdirError := os.MkdirAll(path, 0755)
-			if articlesMkdirError != nil {
-				panic(articlesMkdirError)
+			mkDirError := os.MkdirAll(path, 0755)
+			if mkDirError != nil {
+				exitWithError(fmt.Sprintf("Couldn't create directory '%s'", path), mkDirError.Error())
 			}
 		} else {
-			panic(statError)
+			exitWithError(fmt.Sprintf("Couldn't create directory '%s'", path), statError.Error())
 		}
 	}
 }
