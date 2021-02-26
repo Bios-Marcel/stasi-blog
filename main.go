@@ -9,6 +9,7 @@ import (
 func main() {
 	rootCmd := cobra.Command{}
 	rootCmd.AddCommand(generateBuildCmd())
+	rootCmd.AddCommand(generateServeCmd())
 	rootCmd.Execute()
 }
 
@@ -33,4 +34,21 @@ func generateBuildCmd() *cobra.Command {
 	}
 
 	return buildCmd
+}
+
+func generateServeCmd() *cobra.Command {
+	serveCmd := &cobra.Command{
+		Use:        "serve <directory>",
+		Short:      "Serves the directory via HTTP using a basic webserver.",
+		Example:    "serve ./example-output",
+		SuggestFor: []string{"run"},
+		Args:       cobra.ExactArgs(1),
+	}
+	basepath := serveCmd.Flags().StringP("basepath", "b", "", "Defines the path at which the directory is served. (For example /hello for http://localhost:8080/hello).")
+	port := serveCmd.Flags().IntP("port", "p", 8080, "Decides which port the HTTP server is run on.")
+	serveCmd.Run = func(cmd *cobra.Command, args []string) {
+		serve(args[0], *basepath, *port)
+	}
+
+	return serveCmd
 }

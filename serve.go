@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,15 +9,7 @@ import (
 	"syscall"
 )
 
-var output, basepath *string
-
-func init() {
-	output = flag.String("dir", "example-output", "defines the directory that is being served")
-	basepath = flag.String("basepath", "", "specify basepath to simulate remote setup where files aren't at root")
-	flag.Parse()
-}
-
-func main() {
+func serve(directoryToServe, basepath string, port int) {
 	//Example in my case.
 	//go run . --input="../blog-test-source" --output="../blog-test" & go run demo/server.go --dir="../blog-test" --basepath="/blog-test/"
 
@@ -29,15 +20,15 @@ func main() {
 		os.Exit(0)
 	}()
 
-	port := 8080
-	log.Printf("Serving %s at localhost:%d/%s", *output, port, *basepath)
+	log.Printf("Serving %s at localhost:%d/%s", directoryToServe, port, basepath)
+	log.Println("Please remember to only use this command to serve your website in a development scenario.")
 	portString := fmt.Sprintf(":%d", port)
 
-	dir := dirWith404Handler{http.Dir(*output)}
-	if *basepath == "" {
+	dir := dirWith404Handler{http.Dir(directoryToServe)}
+	if basepath == "" {
 		log.Fatal(http.ListenAndServe(portString, http.FileServer(dir)))
 	} else {
-		http.Handle(*basepath, http.StripPrefix(*basepath, http.FileServer(dir)))
+		http.Handle(basepath, http.StripPrefix(basepath, http.FileServer(dir)))
 		log.Fatal(http.ListenAndServe(portString, nil))
 	}
 }
