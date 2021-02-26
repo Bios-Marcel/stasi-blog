@@ -36,9 +36,9 @@ func createFile(path string) *os.File {
 	return file
 }
 
-func writeTemplateToFile(sourceTemplate *template.Template, data interface{}, path string) {
-	var file io.Writer = createFile(filepath.Join(*output, path))
-	if *minifyOutput {
+func writeTemplateToFile(sourceTemplate *template.Template, data interface{}, outputFolder, path string, minifyOutput bool) {
+	var file io.Writer = createFile(filepath.Join(outputFolder, path))
+	if minifyOutput {
 		//minify.Writer sadly doesn't work, the files end up empty.
 		templateBuffer := &bytes.Buffer{}
 		executeError := sourceTemplate.Execute(templateBuffer, data)
