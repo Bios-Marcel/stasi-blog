@@ -27,8 +27,6 @@ const outputArticles string = "articles"
 var (
 	//go:embed skeletons/*
 	skeletonFS embed.FS
-
-	writtenFiles []string
 )
 
 func main() {
