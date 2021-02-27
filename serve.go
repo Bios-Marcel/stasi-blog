@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 )
 
@@ -20,7 +21,7 @@ func serve(directoryToServe, basepath string, port int) {
 		os.Exit(0)
 	}()
 
-	log.Printf("Serving %s at localhost:%d/%s", directoryToServe, port, basepath)
+	log.Printf("Serving %s at localhost:%d%s", directoryToServe, port, basepath)
 	log.Println("Please remember to only use this command to serve your website in a development scenario.")
 	portString := fmt.Sprintf(":%d", port)
 
@@ -28,6 +29,8 @@ func serve(directoryToServe, basepath string, port int) {
 	if basepath == "" {
 		log.Fatal(http.ListenAndServe(portString, http.FileServer(dir)))
 	} else {
+		//Making sure there's not too many or too little slashes ;)
+		basepath = "/" + strings.Trim(basepath, "/\\") + "/"
 		http.Handle(basepath, http.StripPrefix(basepath, http.FileServer(dir)))
 		log.Fatal(http.ListenAndServe(portString, nil))
 	}

@@ -70,6 +70,10 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 	if configDecodeError != nil {
 		log.Fatalf("Error decoding config: %s\n", configDecodeError)
 	}
+	if loadedPageConfig.BasePath != "" {
+		//Making sure there's not too many or too little slashes ;)
+		loadedPageConfig.BasePath = "/" + strings.Trim(loadedPageConfig.BasePath, "/\\")
+	}
 
 	if loadedPageConfig.UseFavicon {
 		faviconIcoSourcePath := filepath.Join(sourceFolder, "favicon.ico")
