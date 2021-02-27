@@ -117,12 +117,11 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 			exitWithError(fmt.Sprintf("Couldn't parse custom page '%s'", customPage), cloneError.Error())
 		}
 
-		newCustomPageFileName := filepath.Join("pages", customPage.Name())
-		customPageTemplates[newCustomPageFileName] = customPageTemplate
+		customPageTemplates[customPage.Name()] = customPageTemplate
 
 		customPages = append(customPages, &customPageEntry{
 			Title: templateToString(customPageTemplate.Lookup("title")),
-			File:  newCustomPageFileName,
+			File:  path.Join("pages", customPage.Name()),
 		})
 	}
 
@@ -191,7 +190,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 			pageConfig:   loadedPageConfig,
 			podcastAudio: templateToOptionalString(specificArticleTemplate.Lookup("podcast-audio")),
 			Title:        templateToString(specificArticleTemplate.Lookup("title")),
-			File:         articleTargetPath,
+			File:         path.Join("articles", article.Name()),
 			RFC3339Time:  publishTime,
 			HumanTime:    publishTime.Format(loadedPageConfig.DateFormat),
 			Content:      templateToString(specificArticleTemplate.Lookup("content")),
@@ -230,7 +229,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		writeTemplateToFile(customPageTemplate, &customPageData{
 			pageConfig:  loadedPageConfig,
 			CustomPages: customPages,
-		}, output, fileName, minifyOutput)
+		}, output, filepath.Join("pages", fileName), minifyOutput)
 	}
 
 	if *verbose {
