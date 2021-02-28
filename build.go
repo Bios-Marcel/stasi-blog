@@ -270,7 +270,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 			}
 		}
 
-		writeIndexFiles(indexTemplate, indexedArticles, customPages, loadedPageConfig,
+		writeIndexFiles(indexTemplate, tagFilteredArticles, customPages, loadedPageConfig,
 			tags, tag, "index-tag-"+tag+".html", "index-tag-"+tag+"-%d.html", output, minifyOutput)
 	}
 
