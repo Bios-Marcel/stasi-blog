@@ -336,12 +336,19 @@ func writeIndexFiles(
 	indexNameTemplate string,
 	outputFolder string,
 	minifyOutput bool) {
+
+	currentPageNumber := 1
+	lastPageNumber := len(indexedArticles) / loadedPageConfig.MaxIndexEntries
+	if len(indexedArticles)%loadedPageConfig.MaxIndexEntries != 0 {
+		lastPageNumber++
+	}
+
 	for i := 1; i <= len(indexedArticles); i += loadedPageConfig.MaxIndexEntries {
 		var pageName string
-		if i == 1 {
+		if currentPageNumber == 1 {
 			pageName = firstIndexName
 		} else {
-			pageName = fmt.Sprintf(indexNameTemplate, i)
+			pageName = fmt.Sprintf(indexNameTemplate, currentPageNumber)
 		}
 		data := &indexData{
 			pageConfig:       loadedPageConfig,
@@ -350,21 +357,19 @@ func writeIndexFiles(
 			CustomPages:      customPages,
 			IndexedArticles:  indexedArticles[i-1 : minInt(i-1+loadedPageConfig.MaxIndexEntries, len(indexedArticles))],
 			PageNameTemplate: indexNameTemplate,
-			CurrentPageNum:   i,
+			CurrentPageNum:   currentPageNumber,
 			FirstPage:        firstIndexName,
+			LastPageNum:      lastPageNumber,
 		}
 		if i+loadedPageConfig.MaxIndexEntries <= len(indexedArticles) {
-			data.NextPageNum = i + 1
+			data.NextPageNum = currentPageNumber + 1
 		}
-		if i > 1 {
-			data.PrevPageNum = i - 1
-		}
-		data.LastPageNum = len(indexedArticles) / loadedPageConfig.MaxIndexEntries
-		if len(indexedArticles)%loadedPageConfig.MaxIndexEntries != 0 {
-			data.LastPageNum++
+		if currentPageNumber > 1 {
+			data.PrevPageNum = currentPageNumber - 1
 		}
 
 		writeTemplateToFile(indexTemplate, data, outputFolder, pageName, minifyOutput)
+		currentPageNumber++
 	}
 }
 
