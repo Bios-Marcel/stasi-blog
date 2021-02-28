@@ -5,77 +5,95 @@
 The service [GitHub](https://github.com) allows you to host a static website.
 The site can either be delivered as markdown (.md) documents or plain HTML.
 This blog generator creates plain HTML, meaning you can just upload the result
-to your GitHub account and your blog will be online.
+to your GitHub reppository and your blog will be online.
 
 First, you'll have to [make a new GitHub repository](https://github.com/new).
 
-The repository should be public and have your GitHub name as it's name.
-For example, if your name was `hackerman`, you'd have to call the repository
-`hackerman` as well. Later on, this will result in your site being published
-under `https://hackerman.github.io`. If you choose any name that differs from
-your account name, the address will be `https://hackerman.github.io/name`.
+The repository should be public and has to be named `yourusername.github.io`.
+Here you simply replace `yourusername` with whatever your GitHub username
+is. For me for example, it would be ´Bios-Marcel.github.io`.
+If you choose any name that differs from your account name, GitHub will instead
+setup a sub page, using the same address. For example if you'd name your
+repository `blog`, then the URL would be `https://yourusername.github.io/blog`.
 
-Next, we build the blog. As for now, you can use the `example` folder on this
-repository. It contains an already buildable blog that is hostable on GitHub
-as is. The only thing you might want to change, is the `config.json` at the
-root of the example folder.
+Next, you'll need to setup the "blog writing environment" on your computer.
 
-Next you create a new folder somewhere on your computer, but not in the
-stasi-blog source folder. For example `~/home/user/blog` or
-`C:/Users/user/blog`. From now on, the documentation will only be using the
-path `~/home/user/...` in it's examples.
+Open a terminal and execute the following:
 
-This folder now needs to be a so called "git repository".
-In order to do that, you need to [download git](https://git-scm.com/downloads).
-
-Once git has been properly installed, open a terminal and type:
-
-```
-cd YOUR_NEW_FOLDER_PATH
-git clone https://github.com/hackerman/hackerman.git
+```sh
+cd ~/Documents/
+mkdir blog-source
+cd blog-source
 ```
 
-Next you copy the example folders content to a new folder. For example
-`~/home/user/blog-source`.
+If you want your blog files to reside somewhere else, simply change the
+`cd ~/Documents/` line to some other folder. The shortcut `~` is your
+system users home directory.
+
+Next, you need to copy the `example` directory into your newly
+created `blog-source` directory as a. Rename the directory from `example`
+to `source`.
+
+Now, if you didn't name your repository as has been suggested earlier on,
+you'll have to edit your configuration to look like this:
+
+```json
+{
+    "BasePath": "repository-name",
+	"SiteName":"Blog name",
+	"Author":"Your name",
+    "Description":"A blog about things",
+	"URL":"https://yourusername.github.io/",
+	"CreationDate":"2021-02-28T00:00:00+00:00",
+	"AddOptionalMetaData": true
+}
+```
+
+You'll have to replace the `repository-name` with whatever you named the
+repository. While you are at it, you can also change the other settings to
+whatever you desire.
+
+For a full explanation of the `config.json` file, see [The config.json](/the-config.json)
+
+Lastly, you'll need to put the `stasi-blog` executable into that same folder.
 
 So the structure of that folder should now look like this:
 
 ```plain
-~/home/user/blog-source
-|--media
-|--pages
-|  |--about.html
-|--articles
-|  |--post-one.html
-|--config.json
-|--favicon.ico/png
-|--README.md
+|--source
+   |--media
+      |--kaito-kid.png
+   |--pages
+      |--about.html
+   |--articles
+      |--kaito.html
+   |--config.json
+   |--favicon.ico
+   |--README.md
+stasi-blog(.exe)
 ```
 
-Next you run `stasi-blog`:
+Next you `build` your blog, by running:
 
-```
-cd ~/home/user/blog-source
-stasi-blog build ./ --output="../blog"
-```
-
-This will produce the webpage on your computer. All that's left, is to move
-it onto GitHub. This is done via git.
-
-```
-cd ~/home/user/blog
-git add *
-git commit -m "Testing my new blog"
-git push
+```sh
+stasi-blog build -o "./" source
 ```
 
-This procedure will be the same for every change you are doing on your blog.
-I recommend to read up on git a bit, as in principle it's not too hard to
-understand the basics and will probably help you in the future.
+And then `serve` a test version on your computer by running:
 
-Now, the last step you have to do, is to go to your new GitHub repository and
-activate the web page. Under `Settings` in the `GitHub Pages` section you have
-to choose the `master` branch as the pages `source` and hit `Save`.
+```sh
+stasi-blog serve ./
+```
+
+The tool will now show at the URL at which you can see the webpage in your
+browser.
+
+### Uploading your page to GitHub
+
+TODO
+## The config.json
+
+TODO
 
 ## Writing an article
 
