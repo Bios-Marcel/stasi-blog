@@ -18,7 +18,7 @@
 </div>{{$filterTag := .FilterTag}}
 {{if .Tags}}<div class="tags">
 <h2>Tags</h2><div class="tag-list">{{$BasePath := .BasePath}}{{range .Tags}}
-<a href="{{$BasePath}}/index-tag-{{.}}.html">{{if eq $filterTag .}}> {{end}}{{.}}</a>{{end}}
+<a href="{{$BasePath}}/index-{{.}}.html">{{if eq $filterTag .}}> {{end}}{{.}}</a>{{end}}
 </div></div>{{end}}
 </div>
 <div class="pager">
