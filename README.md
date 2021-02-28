@@ -11,24 +11,34 @@ A small generator for **sta**tic and **si**mple **blog**s.
 
 ## Building
 
-First, you need to download Golang version 1.16 or later.
+If you don't want to use one of the release versions from the release section
+or there's no binary for your platform, you can easily build the project
+yourself.
 
-To produce a sefl-contained binary, run:
+All you need is a terminal and [Golang 1.16 or later](https://golang.org/dl/).
+
+Second, you need to download the source code. You can either do this via the
+GitHub webpage or use `git`, which you can get [here](https://git-scm.com/downloads)
+or from your distributions package manager if you are on Linux.
+
+To produce a self-contained binary, open your terminal, navigate to the
+directory where you downloaded the source code to and run:
 
 ```sh
 go build .
 ```
 
-To test whether everything works, you can compile and run:
+This will produce a binary called `stasi-blog` or `stasi-blog.exe` if you are
+on Windows.
+
+To test whether everything works, you can compile and run the example:
 
 ```sh
 ./stasi-blog build ./example --output="example-output"
-./stasi-blog serve ./example
+./stasi-blog serve ./example-output
 ```
 
-The executables name is `stasi-blog.exe` on windows.
-
-Then open [localhost:8080](http://localhost:8080).
+Then open [localhost:8080](http://localhost:8080) in your browser.
 
 **DO NOT USE THE DEMO SERVER IN PRODUCTION!**
 
