@@ -82,6 +82,12 @@ margin-bottom: 0.3em;
 display: flex;
 flex-direction: column
 }
+.pager{
+display: flex;
+flex-direction: row;
+gap: 0.5rem;
+justify-content: center;
+}
 /* CONTENT */
 .authoring-date{
 font-size: 0.8em;

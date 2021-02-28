@@ -63,8 +63,9 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 	createDirectory(filepath.Join(output, "pages"))
 
 	loadedPageConfig := pageConfig{
-		DateFormat: "2 January 2006",
-		UseFavicon: true,
+		DateFormat:      "2 January 2006",
+		UseFavicon:      true,
+		MaxIndexEntries: 10,
 	}
 	configDecodeError := json.NewDecoder(configFile).Decode(&loadedPageConfig)
 	if configDecodeError != nil {
@@ -91,7 +92,16 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		}
 	}
 
-	parsedTemplates, parseError := template.ParseFS(skeletonFS, "skeletons/*.html")
+	parsedTemplates, parseError := template.New("").
+		Funcs(template.FuncMap{
+			"sub": func(a, b int) int {
+				return a - b
+			},
+			"add": func(a, b int) int {
+				return a + b
+			},
+		}).
+		ParseFS(skeletonFS, "skeletons/*.html")
 	if parseError != nil {
 		exitWithError("Couldn't parse HTML templates", parseError.Error())
 	}
@@ -236,16 +246,13 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		}, output, filepath.Join("pages", fileName), minifyOutput)
 	}
 
+	indexTemplate := parsedTemplates.Lookup("index")
+
 	if *verbose {
-		showInfo("Writing main index (index.html).")
+		showInfo("Writing main index files.")
 	}
-	//Main Index with all articles.
-	writeTemplateToFile(parsedTemplates.Lookup("index"), &indexData{
-		pageConfig:      loadedPageConfig,
-		Tags:            tags,
-		CustomPages:     customPages,
-		IndexedArticles: indexedArticles,
-	}, output, "index.html", minifyOutput)
+	writeIndexFiles(indexTemplate, indexedArticles, customPages, loadedPageConfig,
+		tags, "", "index.html", "index-%d.html", output, minifyOutput)
 
 	if *verbose {
 		showInfo("Writing tagged index files.")
@@ -263,13 +270,8 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 			}
 		}
 
-		writeTemplateToFile(parsedTemplates.Lookup("index"), &indexData{
-			pageConfig:      loadedPageConfig,
-			Tags:            tags,
-			FilterTag:       tag,
-			CustomPages:     customPages,
-			IndexedArticles: tagFilteredArticles,
-		}, output, "index-tag-"+tag+".html", minifyOutput)
+		writeIndexFiles(indexTemplate, indexedArticles, customPages, loadedPageConfig,
+			tags, tag, "index-tag-"+tag+".html", "index-tag-"+tag+"-%d.html", output, minifyOutput)
 	}
 
 	if *verbose {
@@ -319,6 +321,51 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		pageConfig:  loadedPageConfig,
 		CustomPages: customPages,
 	}, output, "404.html", minifyOutput)
+}
+
+// writeIndexFiles writes paginated index files. It supports both tagged
+// index files and untagged (default) index files.
+func writeIndexFiles(
+	indexTemplate *template.Template,
+	indexedArticles []*indexedArticle,
+	customPages []*customPageEntry,
+	loadedPageConfig pageConfig,
+	tags []string,
+	filterTag string,
+	firstIndexName string,
+	indexNameTemplate string,
+	outputFolder string,
+	minifyOutput bool) {
+	for i := 1; i <= len(indexedArticles); i += loadedPageConfig.MaxIndexEntries {
+		var pageName string
+		if i == 1 {
+			pageName = firstIndexName
+		} else {
+			pageName = fmt.Sprintf(indexNameTemplate, i)
+		}
+		data := &indexData{
+			pageConfig:       loadedPageConfig,
+			Tags:             tags,
+			FilterTag:        filterTag,
+			CustomPages:      customPages,
+			IndexedArticles:  indexedArticles[i-1 : i-1+loadedPageConfig.MaxIndexEntries],
+			PageNameTemplate: indexNameTemplate,
+			CurrentPageNum:   i,
+			FirstPage:        firstIndexName,
+		}
+		if i+loadedPageConfig.MaxIndexEntries <= len(indexedArticles) {
+			data.NextPageNum = i + 1
+		}
+		if i > 1 {
+			data.PrevPageNum = i - 1
+		}
+		data.LastPageNum = len(indexedArticles) / loadedPageConfig.MaxIndexEntries
+		if len(indexedArticles)%loadedPageConfig.MaxIndexEntries != 0 {
+			data.LastPageNum++
+		}
+
+		writeTemplateToFile(indexTemplate, data, outputFolder, pageName, minifyOutput)
+	}
 }
 
 func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle, loadedPageConfig pageConfig) {
@@ -412,6 +459,7 @@ type pageConfig struct {
 	Email               string
 	CreationDate        string
 	UtterancesRepo      string
+	MaxIndexEntries     int
 	AddOptionalMetaData bool
 	UseFavicon          bool
 }
@@ -451,6 +499,15 @@ type indexData struct {
 	CustomPages []*customPageEntry
 	//IndexedArticles are the articles to display.
 	IndexedArticles []*indexedArticle
+
+	PageNameTemplate string
+
+	FirstPage string
+
+	CurrentPageNum int
+	PrevPageNum    int
+	NextPageNum    int
+	LastPageNum    int
 }
 
 func templateToString(temp *template.Template) string {

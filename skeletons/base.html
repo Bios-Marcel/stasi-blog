@@ -6,8 +6,7 @@
 <a class="menu-link" href="{{$BasePath}}/{{.File}}">{{.Title}}</a>{{end}}
 </nav>{{end}}
 
-{{define "base-header"}}
-<link rel="stylesheet" type="text/css" href="{{.BasePath}}/base.css">
+{{define "base-header"}}<link rel="stylesheet" type="text/css" href="{{.BasePath}}/base.css">
 {{/* Avoids favicon request or adds favicon */}}
 <link rel="icon" href="{{if .UseFavicon}}{{.BasePath}}/favicon.ico{{else}}data:,{{end}}"/>{{end}}
 

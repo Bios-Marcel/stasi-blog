@@ -72,6 +72,7 @@ An example for the `config.json`:
    "Email":"mail@provider.com",
    "CreationDate":"2018-05-27T00:00:00+00:00",
    "UtterancesRepo": "github-handle/github-handle.github.io",
+   "MaxIndexEntries": 10,
    "AddOptionalMetaData": true,
    "DateFormat": "2 January 2006",
    "UseFavicon": true,
@@ -87,6 +88,7 @@ The following properties are optional:
 - `Email` (Used for RSS)
 - `CreationDate` (Used for metadata/RSS)
 - `UtterancesRepo` (Needed for comments)
+- `MaxIndexEntries` (Decides how many posts are shown per page (Default 10))
 - `AddOptionalMetaData` (Add metadata such as tags, description, author and so on)
 - `DateFormat` (Needed for human readable dates later on)
   > [The format requires specific numbers](https://golang.org/pkg/time/#pkg-constants), it's weird.
