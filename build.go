@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/feeds"
+	"github.com/Bios-Marcel/feeds"
 	"github.com/otiai10/copy"
 )
 
@@ -198,8 +198,6 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		}
 		articleTargetPath := filepath.Join("articles", article.Name())
 
-		writeTemplateToFile(specificArticleTemplate, articleData, output, articleTargetPath, minifyOutput)
-
 		newIndexedArticle := &indexedArticle{
 			pageConfig:   loadedPageConfig,
 			podcastAudio: templateToOptionalString(specificArticleTemplate.Lookup("podcast-audio")),
@@ -209,8 +207,19 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 			HumanTime:    publishTime.Format(loadedPageConfig.DateFormat),
 			Content:      templateToString(specificArticleTemplate.Lookup("content")),
 			Tags:         tags,
+			AuthorName:   strings.TrimSpace(templateToOptionalString(specificArticleTemplate.Lookup("author"))),
+			AuthorEmail:  strings.TrimSpace(templateToOptionalString(specificArticleTemplate.Lookup("author-email"))),
 		}
+		//Fix page metadata to include correct name instead of main author.
+		if newIndexedArticle.AuthorName != "" {
+			newIndexedArticle.Author = newIndexedArticle.AuthorName
+			articleData.Author = newIndexedArticle.AuthorName
+		}
+
 		indexedArticles = append(indexedArticles, newIndexedArticle)
+
+		writeTemplateToFile(specificArticleTemplate, articleData, output, articleTargetPath, minifyOutput)
+
 	}
 
 	//Sort articles to make sure the RSS feed and index have the right ordering.
@@ -382,9 +391,9 @@ func minInt(a, b int) int {
 }
 
 func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle, loadedPageConfig pageConfig) {
-	var author *feeds.Author
-	if loadedPageConfig.Author != "" || loadedPageConfig.Email != "" {
-		author = &feeds.Author{
+	var mainAuthor *feeds.Author
+	if loadedPageConfig.Email != "" {
+		mainAuthor = &feeds.Author{
 			Name:  loadedPageConfig.Author,
 			Email: loadedPageConfig.Email,
 		}
@@ -392,7 +401,7 @@ func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle,
 	feed := &feeds.Feed{
 		Title:       loadedPageConfig.SiteName,
 		Description: loadedPageConfig.Description,
-		Author:      author,
+		Author:      mainAuthor,
 	}
 	if loadedPageConfig.URL != "" {
 		feed.Link = &feeds.Link{Href: loadedPageConfig.URL}
@@ -403,12 +412,22 @@ func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle,
 
 	for _, article := range articles {
 		newFeedItem := &feeds.Item{
-			Title: article.Title,
-			//Causes feed to be invalid.
-			//Author:      author,
+			Title:       article.Title,
+			Author:      mainAuthor,
 			Content:     article.Content,
 			Description: article.Description,
 			Created:     article.RFC3339Time,
+		}
+		if article.AuthorEmail != "" || article.AuthorName != "" {
+			articleAuthor := &feeds.Author{
+				Name: article.AuthorName,
+			}
+			if article.AuthorEmail != "" {
+				articleAuthor.Email = article.AuthorEmail
+			} else if mainAuthor != nil {
+				articleAuthor.Email = mainAuthor.Email
+			}
+			newFeedItem.Author = articleAuthor
 		}
 		if article.podcastAudio != "" {
 			audioFilepath := filepath.Join(sourceFolder, article.podcastAudio)
@@ -542,6 +561,8 @@ func templateToOptionalString(temp *template.Template) string {
 
 type indexedArticle struct {
 	pageConfig
+	AuthorName   string
+	AuthorEmail  string
 	Title        string
 	File         string
 	RFC3339Time  time.Time
