@@ -89,8 +89,10 @@ gap: 0.5rem;
 justify-content: center;
 }
 /* CONTENT */
-.authoring-date{
+.authoring-info{
 font-size: 0.8em;
+margin-top: 0;
+margin-bottom: 2rem;
 font-weight: bold;
 font-style: italic;
 }
