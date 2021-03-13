@@ -13,7 +13,8 @@ A small generator for **sta**tic and **si**mple **blog**s.
 
 If you don't want to use one of the release versions from the release section
 or there's no binary for your platform, you can easily build the project
-yourself.
+yourself or let [Go](https://golang.org/) install it in your `$GOPATH`
+by running `go get github.com/Bios-Marcel/stasi-blog`.
 
 All you need is a terminal and [Golang 1.16 or later](https://golang.org/dl/).
 
