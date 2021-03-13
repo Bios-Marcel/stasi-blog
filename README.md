@@ -4,12 +4,14 @@ A small generator for **sta**tic and **si**mple **blog**s.
 
 ## Overview
 
-- [Building](#building)
+- [Installation](#installation)
+   - [go get](#go-get)
+   - [Building](#building)
 - [Usage](#Usage)
 - [Example](#example)
 - [Features](#features)
 
-## Building
+## Installation
 
 If you don't want to use one of the release versions from the release section
 or there's no binary for your platform, you can easily build the project
@@ -17,9 +19,44 @@ yourself.
 
 All you need is a terminal and [Golang 1.16 or later](https://golang.org/dl/).
 
-Second, you need to download the source code. You can either do this via the
-GitHub webpage or use `git`, which you can get [here](https://git-scm.com/downloads)
-or from your distributions package manager if you are on Linux.
+In order to build the application, there's two ways.
+
+## go get
+
+The first way is to use `go get` , which allows you to download and build
+the application with a single command.
+
+To do this, run:
+
+```sh
+go get -u github.com/Bios-Marcel/stasi-blog
+```
+
+In order to update, run the same command again.
+
+The produced binary will be installed at `$GOPATH/bin`. If your `GOPATH` isn't
+set, the default location should be in your user directory in the `go` folder.
+On my machine, this would be `/home/marcel/go/bin`. For more information consult
+the [official documentation](https://golang.org/doc/gopath_code).
+
+In order to be able to run the tool via your terminal, you have to put
+`/home/marcel/go/bin` onto your `PATH` variable.
+
+## Building
+
+The second option is to manually download the source code and execute the build command.
+
+You can download the source code via the GitHub webpage or by using `git`, which
+you can get [here](https://git-scm.com/downloads) or from your distributions
+package manager, if your system offers one.
+
+In order to download via `git`, open a terminal and run:
+
+```sh
+git clone https://github.com/Bios-Marcel/stasi-blog.git
+```
+
+This downloads the source code to your current working directory.
 
 To produce a self-contained binary, open your terminal, navigate to the
 directory where you downloaded the source code to and run:
@@ -41,6 +78,9 @@ To test whether everything works, you can compile and run the example:
 Then open [localhost:8080](http://localhost:8080) in your browser.
 
 **DO NOT USE THE DEMO SERVER IN PRODUCTION!**
+
+If you want to update your build, run `git pull` in the source code
+direcotry to get the latest changes and run `go build .` again.
 
 ## Usage
 
