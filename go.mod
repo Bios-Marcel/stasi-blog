@@ -1,4 +1,4 @@
-module gituhb.com/Bios-Marcel/stasi-blog
+module github.com/Bios-Marcel/stasi-blog
 
 go 1.16
 
