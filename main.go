@@ -9,7 +9,7 @@ import (
 var verbose = new(bool)
 
 func main() {
-	rootCmd := cobra.Command{}
+	rootCmd := cobra.Command{Use: "stasi-blog"}
 	rootCmd.PersistentFlags().BoolVarP(verbose, "verbose", "v", false, "Decides whether additional, potentially unnecessary extra information, is printed to the terminal.")
 	rootCmd.AddCommand(generateBuildCmd())
 	rootCmd.AddCommand(generateServeCmd())
@@ -18,7 +18,7 @@ func main() {
 
 func generateBuildCmd() *cobra.Command {
 	buildCmd := &cobra.Command{
-		Use:        "build <source directory>",
+		Use:        "build directory",
 		Short:      "Assembles the source directory and delivers a deployable website.",
 		Example:    "build ./example",
 		SuggestFor: []string{"make", "assemble", "compile"},
@@ -41,7 +41,7 @@ func generateBuildCmd() *cobra.Command {
 
 func generateServeCmd() *cobra.Command {
 	serveCmd := &cobra.Command{
-		Use:        "serve <directory>",
+		Use:        "serve directory",
 		Short:      "Serves the directory via HTTP using a basic webserver.",
 		Example:    "serve ./example-output",
 		SuggestFor: []string{"run"},
