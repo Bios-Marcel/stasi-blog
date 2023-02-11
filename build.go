@@ -116,9 +116,9 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		}
 	}
 
-	customPageTemplates := make(map[string]*template.Template)
-	var customPages []*customPageEntry
-	for _, customPage := range customPageFiles {
+	customPageTemplates := make(map[string]*template.Template, len(customPageFiles))
+	customPages := make([]*customPageEntry, len(customPageFiles))
+	for index, customPage := range customPageFiles {
 		customPageSkeletonClone, cloneError := parsedTemplates.Lookup("page").Clone()
 		if cloneError != nil {
 			exitWithError("Couldn't clone page template", cloneError.Error())
@@ -132,10 +132,10 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 
 		customPageTemplates[customPage.Name()] = customPageTemplate
 
-		customPages = append(customPages, &customPageEntry{
+		customPages[index] = &customPageEntry{
 			Title: templateToString(customPageTemplate.Lookup("title")),
 			File:  path.Join("pages", customPage.Name()),
-		})
+		}
 	}
 
 	articles, articlesReadError := os.ReadDir(filepath.Join(sourceFolder, "articles"))
@@ -146,7 +146,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 	if *verbose {
 		showInfo("Indexing and writing articles.")
 	}
-	var indexedArticles []*indexedArticle
+	indexedArticles := make([]*indexedArticle, 0, len(articles))
 	for _, article := range articles {
 		//Other files are ignored. For example I use this to create
 		//.html-draft files which are posts that I don't want to publish
@@ -218,7 +218,6 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		indexedArticles = append(indexedArticles, newIndexedArticle)
 
 		writeTemplateToFile(specificArticleTemplate, articleData, output, articleTargetPath, minifyOutput)
-
 	}
 
 	//Sort articles to make sure the RSS feed and index have the right ordering.
