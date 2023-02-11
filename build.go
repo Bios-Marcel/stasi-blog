@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -106,7 +105,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		exitWithError("Couldn't parse HTML templates", parseError.Error())
 	}
 
-	customPageFiles, pagesFolderError := ioutil.ReadDir(filepath.Join(sourceFolder, "pages"))
+	customPageFiles, pagesFolderError := os.ReadDir(filepath.Join(sourceFolder, "pages"))
 	if pagesFolderError != nil {
 		if os.IsNotExist(pagesFolderError) {
 			if *verbose {
@@ -139,7 +138,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		})
 	}
 
-	articles, articlesReadError := ioutil.ReadDir(filepath.Join(sourceFolder, "articles"))
+	articles, articlesReadError := os.ReadDir(filepath.Join(sourceFolder, "articles"))
 	if articlesReadError != nil {
 		exitWithError("Couldn't read source articles", articlesReadError.Error())
 	}

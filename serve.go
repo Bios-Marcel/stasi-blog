@@ -16,7 +16,7 @@ func serve(directoryToServe, basepath string, port int) {
 
 	go func() {
 		sc := make(chan os.Signal, 1)
-		signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+		signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM)
 		<-sc
 		os.Exit(0)
 	}()
