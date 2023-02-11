@@ -210,3 +210,30 @@ footer {
         display: none;
     }
 }
+
+/* ADJUSTMENTS FOR BROWSER BUILTIN PRINT FUNCTION */
+@media print {
+
+    header,
+    footer {
+        display: none;
+    }
+
+    * {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    p {
+        padding-top: 1rem;
+    }
+
+    body {
+        /* Some browser do not remove the background. */
+        background-color: white;
+    }
+}
+
+@page {
+    margin: 2cm;
+}
