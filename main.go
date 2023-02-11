@@ -19,10 +19,10 @@ func main() {
 
 func generateLiveCmd() *cobra.Command {
 	buildCmd := &cobra.Command{
-		Use:        "dev directory",
-		Short:      "dev serves the specified source directory and reflects changes instantly (debounced)",
-		SuggestFor: []string{"live"},
-		Args:       cobra.ExactArgs(1),
+		Use:     "dev directory",
+		Short:   "dev serves the specified source directory and reflects changes instantly (debounced)",
+		Aliases: []string{"develop", "live"},
+		Args:    cobra.ExactArgs(1),
 	}
 	config := buildCmd.Flags().StringP("config", "c", "", "Defines where the config is. If left empty, the config will be assumed in the source directory.")
 	basepath := buildCmd.Flags().StringP("basepath", "b", "", "Defines the path at which the directory is served. (For example /hello for http://localhost:8080/hello).")
