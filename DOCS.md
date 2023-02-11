@@ -40,12 +40,12 @@ you'll have to edit your configuration to look like this:
 ```json
 {
     "BasePath": "repository-name",
-	"SiteName":"Blog name",
-	"Author":"Your name",
+    "SiteName":"Blog name",
+    "Author":"Your name",
     "Description":"A blog about things",
-	"URL":"https://yourusername.github.io/",
-	"CreationDate":"2021-02-28T00:00:00+00:00",
-	"AddOptionalMetaData": true
+    "URL":"https://yourusername.github.io/",
+    "CreationDate":"2021-02-28T00:00:00+00:00",
+    "AddOptionalMetaData": true
 }
 ```
 

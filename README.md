@@ -17,30 +17,25 @@ If you don't want to use one of the release versions from the release section
 or there's no binary for your platform, you can easily build the project
 yourself.
 
-All you need is a terminal and [Golang 1.16 or later](https://golang.org/dl/).
+All you need is a terminal and [Golang 1.18 or later](https://golang.org/dl/).
 
-In order to build the application, there's two ways.
+## Installation via go
 
-## go get
-
-The first way is to use `go get` , which allows you to download and build
-the application with a single command.
-
-To do this, run:
+Run:
 
 ```sh
-go get -u github.com/Bios-Marcel/stasi-blog
+go install github.com/Bios-Marcel/stasi-blog@latest
 ```
 
 In order to update, run the same command again.
 
 The produced binary will be installed at `$GOPATH/bin`. If your `GOPATH` isn't
-set, the default location should be in your user directory in the `go` folder.
-On my machine, this would be `/home/marcel/go/bin`. For more information consult
-the [official documentation](https://golang.org/doc/gopath_code).
+set, the default location should be `~/go`. On my machine, this would be
+`/home/marcel/go/bin`. For more information consult the
+[official documentation](https://golang.org/doc/gopath_code).
 
 In order to be able to run the tool via your terminal, you have to put
-`/home/marcel/go/bin` onto your `PATH` variable.
+`~/go/bin` onto your `PATH` variable.
 
 ## Building
 
