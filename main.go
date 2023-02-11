@@ -12,8 +12,26 @@ func main() {
 	rootCmd := cobra.Command{Use: "stasi-blog"}
 	rootCmd.PersistentFlags().BoolVarP(verbose, "verbose", "v", false, "Decides whether additional, potentially unnecessary extra information, is printed to the terminal.")
 	rootCmd.AddCommand(generateBuildCmd())
+	rootCmd.AddCommand(generateLiveCmd())
 	rootCmd.AddCommand(generateServeCmd())
 	rootCmd.Execute()
+}
+
+func generateLiveCmd() *cobra.Command {
+	buildCmd := &cobra.Command{
+		Use:        "dev directory",
+		Short:      "dev serves the specified source directory and reflects changes instantly (debounced)",
+		SuggestFor: []string{"live"},
+		Args:       cobra.ExactArgs(1),
+	}
+	config := buildCmd.Flags().StringP("config", "c", "", "Defines where the config is. If left empty, the config will be assumed in the source directory.")
+	basepath := buildCmd.Flags().StringP("basepath", "b", "", "Defines the path at which the directory is served. (For example /hello for http://localhost:8080/hello).")
+	port := buildCmd.Flags().IntP("port", "p", 8080, "Decides which port the HTTP server is run on.")
+	buildCmd.Run = func(cmd *cobra.Command, args []string) {
+		live(args[0], *basepath, *config, *port)
+	}
+
+	return buildCmd
 }
 
 func generateBuildCmd() *cobra.Command {

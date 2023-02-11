@@ -4,6 +4,8 @@ go 1.18
 
 require (
 	github.com/Bios-Marcel/feeds v1.1.2
+	github.com/bep/debounce v1.2.1
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/otiai10/copy v1.9.0
 	github.com/spf13/cobra v1.6.1
 	github.com/tdewolff/minify/v2 v2.12.4
