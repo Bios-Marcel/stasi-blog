@@ -21,7 +21,7 @@ func serve(directoryToServe, basepath string, port int) error {
 		os.Exit(0)
 	}()
 
-	log.Printf("Serving %s at localhost:%d%s", directoryToServe, port, basepath)
+	log.Printf("Serving %s at http://localhost:%d%s", directoryToServe, port, basepath)
 	log.Println("Please remember to only use this command to serve your website in a development scenario.")
 	portString := fmt.Sprintf(":%d", port)
 
