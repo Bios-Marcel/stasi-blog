@@ -23,75 +23,66 @@ import (
 //go:embed skeletons/*
 var skeletonFS embed.FS
 
-func build(sourceFolder, output, config string, minifyOutput bool) {
-	var configPath string
-	if config != "" {
-		configPath = config
-	} else {
-		configPath = filepath.Join(sourceFolder, "config.json")
-	}
-
-	configFile, openError := os.Open(configPath)
-	if openError != nil {
-		log.Fatalf("Error loading config: %s\n", openError)
-	}
-
-	if *verbose {
-		showInfo("Clearing output directory.")
-	}
-	//Delete old data
-	os.RemoveAll(filepath.Join(output, "media"))
-	os.RemoveAll(filepath.Join(output, "articles"))
-	os.RemoveAll(filepath.Join(output, "pages"))
-	os.Remove(filepath.Join(output, "favicon.ico"))
-	os.Remove(filepath.Join(output, "favicon.png"))
-	os.Remove(filepath.Join(output, "base.css"))
-	os.Remove(filepath.Join(output, "404.html"))
-	os.Remove(filepath.Join(output, "feed.xml"))
-	files, globError := filepath.Glob(filepath.Join(output, "index*.html"))
-	if globError != nil {
-		exitWithError("Couldn't delete old index*.html files", globError.Error())
-	}
-	for _, indexToDelete := range files {
-		os.Remove(indexToDelete)
+func build(sourceFolder, output, config string, minifyOutput bool) error {
+	if err := cleanup(output); err != nil {
+		return fmt.Errorf("error performing cleanup: %w", err)
 	}
 
 	//Create empty directories
-	createDirectory(filepath.Join(output, "media"))
-	createDirectory(filepath.Join(output, "articles"))
-	createDirectory(filepath.Join(output, "pages"))
+	err := createDirectories(
+		filepath.Join(output, "media"),
+		filepath.Join(output, "articles"),
+		filepath.Join(output, "pages"),
+	)
+	if err != nil {
+		return fmt.Errorf("error preparing target folder structure: %w", err)
+	}
 
 	loadedPageConfig := pageConfig{
 		DateFormat:      "2 January 2006",
 		UseFavicon:      true,
 		MaxIndexEntries: 10,
 	}
-	configDecodeError := json.NewDecoder(configFile).Decode(&loadedPageConfig)
-	if configDecodeError != nil {
-		log.Fatalf("Error decoding config: %s\n", configDecodeError)
+	var configPath string
+	if config != "" {
+		configPath = config
+	} else {
+		configPath = filepath.Join(sourceFolder, "config.json")
+	}
+	configFile, err := os.Open(configPath)
+	if err != nil {
+		return fmt.Errorf("error loading config '%s': %w", configPath, err)
+	}
+
+	if err := json.NewDecoder(configFile).Decode(&loadedPageConfig); err != nil {
+		log.Fatalf("Error decoding config: %s\n", err)
 	}
 	if loadedPageConfig.BasePath != "" {
 		//Making sure there's not too many or too little slashes ;)
-		loadedPageConfig.BasePath = "/" + strings.Trim(loadedPageConfig.BasePath, "/\\")
+		loadedPageConfig.BasePath = "/" + strings.Trim(loadedPageConfig.BasePath, `/\`)
 	}
 
 	if loadedPageConfig.UseFavicon {
-		faviconIcoSourcePath := filepath.Join(sourceFolder, "favicon.ico")
-		_, faviconIcoErr := os.Stat(faviconIcoSourcePath)
-		if faviconIcoErr != nil {
-			faviconPngSourcePath := filepath.Join(sourceFolder, "favicon.png")
-			_, faviconPngErr := os.Stat(faviconPngSourcePath)
-			if faviconPngErr != nil {
-				log.Fatalln("favicon.ico/png couldn't be found. If you don't want to use a favicon, set 'UseFavicon' to 'false'.")
-			} else {
-				copyFileByPath(faviconPngSourcePath, filepath.Join(output, "favicon.png"))
+		// .ico is preferred, as it has multi resolution support.
+		if err := copyFileByPath(
+			filepath.Join(sourceFolder, "favicon.ico"),
+			filepath.Join(output, "favicon.ico")); err != nil {
+			if !os.IsNotExist(err) {
+				log.Println("error copying favicon.ico:", err)
 			}
-		} else {
-			copyFileByPath(faviconIcoSourcePath, filepath.Join(output, "favicon.ico"))
+			if err := copyFileByPath(
+				filepath.Join(sourceFolder, "favicon.png"),
+				filepath.Join(output, "favicon.png")); err != nil {
+				if !os.IsNotExist(err) {
+					return fmt.Errorf("error copying favicon.ico: %w", err)
+				} else {
+					return fmt.Errorf("favicon.ico/png couldn't be found. If you don't want to use a favicon, set 'UseFavicon' to 'false'")
+				}
+			}
 		}
 	}
 
-	parsedTemplates, parseError := template.New("").
+	parsedTemplates, err := template.New("").
 		Funcs(template.FuncMap{
 			"sub": func(a, b int) int {
 				return a - b
@@ -101,50 +92,48 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 			},
 		}).
 		ParseFS(skeletonFS, "skeletons/*.html")
-	if parseError != nil {
-		exitWithError("Couldn't parse HTML templates", parseError.Error())
+	if err != nil {
+		return fmt.Errorf("couldn't parse HTML templates: %w", err)
 	}
 
-	customPageFiles, pagesFolderError := os.ReadDir(filepath.Join(sourceFolder, "pages"))
-	if pagesFolderError != nil {
-		if os.IsNotExist(pagesFolderError) {
-			if *verbose {
-				showWarning("pages directory couldn't be found and therefore couldn't be handled.")
-			}
-		} else {
-			exitWithError("Couldn't handle pages directory", pagesFolderError.Error())
-		}
+	customPageFiles, err := os.ReadDir(filepath.Join(sourceFolder, "pages"))
+	if err != nil {
+		return fmt.Errorf("couldn't handle pages directory: %w", err)
 	}
 
 	customPageTemplates := make(map[string]*template.Template, len(customPageFiles))
 	customPages := make([]*customPageEntry, len(customPageFiles))
 	for index, customPage := range customPageFiles {
-		customPageSkeletonClone, cloneError := parsedTemplates.Lookup("page").Clone()
-		if cloneError != nil {
-			exitWithError("Couldn't clone page template", cloneError.Error())
+		customPageSkeletonClone, err := parsedTemplates.Lookup("page").Clone()
+		if err != nil {
+			return fmt.Errorf("couldn't clone 'page' template: %w", err)
 		}
 
 		sourcePath := filepath.Join(sourceFolder, "pages", customPage.Name())
-		customPageTemplate, parseError := customPageSkeletonClone.ParseFiles(sourcePath)
-		if parseError != nil {
-			exitWithError(fmt.Sprintf("Couldn't parse custom page '%s'", customPage), cloneError.Error())
+		customPageTemplate, err := customPageSkeletonClone.ParseFiles(sourcePath)
+		if err != nil {
+			return fmt.Errorf("couldn't parse custom page '%s': %w", customPage, err)
 		}
 
 		customPageTemplates[customPage.Name()] = customPageTemplate
 
+		title, err := templateToString(customPageTemplate.Lookup("title"))
+		if err != nil {
+			return err
+		}
 		customPages[index] = &customPageEntry{
-			Title: templateToString(customPageTemplate.Lookup("title")),
+			Title: title,
 			File:  path.Join("pages", customPage.Name()),
 		}
 	}
 
-	articles, articlesReadError := os.ReadDir(filepath.Join(sourceFolder, "articles"))
-	if articlesReadError != nil {
-		exitWithError("Couldn't read source articles", articlesReadError.Error())
+	articles, err := os.ReadDir(filepath.Join(sourceFolder, "articles"))
+	if err != nil {
+		return fmt.Errorf("couldn't read source articles: %w", err)
 	}
 
 	if *verbose {
-		showInfo("Indexing and writing articles.")
+		log.Println("Indexing and writing articles.")
 	}
 	indexedArticles := make([]*indexedArticle, 0, len(articles))
 	for _, article := range articles {
@@ -155,21 +144,29 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 			continue
 		}
 
-		newArticleSkeleton, cloneError := parsedTemplates.Lookup("article").Clone()
-		if cloneError != nil {
-			exitWithError("Couldn't clone article template", cloneError.Error())
+		newArticleSkeleton, err := parsedTemplates.Lookup("article").Clone()
+		if err != nil {
+			return fmt.Errorf("couldn't clone article template: %w", err)
 		}
 		sourcePath := filepath.Join(sourceFolder, "articles", article.Name())
-		specificArticleTemplate, parseError := newArticleSkeleton.ParseFiles(sourcePath)
-		if parseError != nil {
-			exitWithError(fmt.Sprintf("Couldn't parse article '%s'", article), cloneError.Error())
+		specificArticleTemplate, err := newArticleSkeleton.ParseFiles(sourcePath)
+		if err != nil {
+			return fmt.Errorf("couldn't parse article '%s': %w", article, err)
 		}
 		articleData := &articlePageData{
 			pageConfig:  loadedPageConfig,
 			CustomPages: customPages,
 		}
-		articleData.Description = templateToOptionalString(specificArticleTemplate.Lookup("description"))
-		tagString := strings.TrimSpace(templateToOptionalString(specificArticleTemplate.Lookup("tags")))
+
+		articleData.Description, err = templateToOptionalString(specificArticleTemplate.Lookup("description"))
+		if err != nil {
+			return err
+		}
+		tagString, err := templateToOptionalString(specificArticleTemplate.Lookup("tags"))
+		if err != nil {
+			return err
+		}
+		tagString = strings.TrimSpace(tagString)
 		var tags []string
 		//Tags are optional
 		if tagString != "" {
@@ -182,14 +179,20 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 			})
 		}
 		articleData.Tags = tags
-		dateAsString := templateToString(specificArticleTemplate.Lookup("date"))
-		publishTime, timeParseError := time.Parse("2006-01-02", dateAsString)
-		if timeParseError != nil {
-			exitWithError(fmt.Sprintf("Couldn't parse date '%s'", dateAsString), timeParseError.Error())
+		dateAsString, err := templateToString(specificArticleTemplate.Lookup("date"))
+		if err != nil {
+			return err
+		}
+		publishTime, err := time.Parse("2006-01-02", dateAsString)
+		if err != nil {
+			return fmt.Errorf("couldn't parse date '%s': %w", dateAsString, err)
 		}
 		articleData.RFC3339Time = publishTime.Format(time.RFC3339)
 		articleData.HumanTime = publishTime.Format(loadedPageConfig.DateFormat)
-		articleData.PodcastAudio = templateToOptionalString(specificArticleTemplate.Lookup("podcast-audio"))
+		articleData.PodcastAudio, err = templateToOptionalString(specificArticleTemplate.Lookup("podcast-audio"))
+		if err != nil {
+			return err
+		}
 		if articleData.PodcastAudio != "" {
 			if strings.HasPrefix(strings.TrimPrefix(articleData.PodcastAudio, "/"), "media") {
 				articleData.PodcastAudio = path.Join(loadedPageConfig.BasePath, articleData.PodcastAudio)
@@ -197,17 +200,36 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 		}
 		articleTargetPath := filepath.Join("articles", article.Name())
 
+		title, err := templateToString(specificArticleTemplate.Lookup("title"))
+		if err != nil {
+			return err
+		}
+		content, err := templateToString(specificArticleTemplate.Lookup("content"))
+		if err != nil {
+			return err
+		}
+		author, err := templateToOptionalString(specificArticleTemplate.Lookup("author"))
+		if err != nil {
+			return err
+		}
+		author = strings.TrimSpace(author)
+		authorEmail, err := templateToOptionalString(specificArticleTemplate.Lookup("author-email"))
+		if err != nil {
+			return err
+		}
+		authorEmail = strings.TrimSpace(authorEmail)
+
 		newIndexedArticle := &indexedArticle{
 			pageConfig:   loadedPageConfig,
-			podcastAudio: templateToOptionalString(specificArticleTemplate.Lookup("podcast-audio")),
-			Title:        templateToString(specificArticleTemplate.Lookup("title")),
+			podcastAudio: articleData.PodcastAudio,
+			Title:        title,
 			File:         path.Join("articles", article.Name()),
 			RFC3339Time:  publishTime,
 			HumanTime:    publishTime.Format(loadedPageConfig.DateFormat),
-			Content:      templateToString(specificArticleTemplate.Lookup("content")),
+			Content:      content,
 			Tags:         tags,
-			AuthorName:   strings.TrimSpace(templateToOptionalString(specificArticleTemplate.Lookup("author"))),
-			AuthorEmail:  strings.TrimSpace(templateToOptionalString(specificArticleTemplate.Lookup("author-email"))),
+			AuthorName:   author,
+			AuthorEmail:  authorEmail,
 		}
 		//Fix page metadata to include correct name instead of main author.
 		if newIndexedArticle.AuthorName != "" {
@@ -243,7 +265,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 	}
 
 	if *verbose {
-		showInfo("Writing custom pages.")
+		log.Println("Writing custom pages.")
 	}
 	//We first populate the custom page array so that the pages all have a correct menu header.
 	for fileName, customPageTemplate := range customPageTemplates {
@@ -256,13 +278,13 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 	indexTemplate := parsedTemplates.Lookup("index")
 
 	if *verbose {
-		showInfo("Writing main index files.")
+		log.Println("Writing main index files.")
 	}
 	writeIndexFiles(indexTemplate, indexedArticles, customPages, loadedPageConfig,
 		tags, "", "index.html", "index-%d.html", output, minifyOutput)
 
 	if *verbose {
-		showInfo("Writing tagged index files.")
+		log.Println("Writing tagged index files.")
 	}
 	//Special Index-Files with tag-filters
 	for _, tag := range tags {
@@ -282,52 +304,83 @@ func build(sourceFolder, output, config string, minifyOutput bool) {
 	}
 
 	if *verbose {
-		showInfo("Writing RSS feed.")
+		log.Println("Writing RSS feed.")
 	}
-	writeRSSFeed(sourceFolder, output, indexedArticles, loadedPageConfig)
+	if err := writeRSSFeed(sourceFolder, output, indexedArticles, loadedPageConfig); err != nil {
+		return fmt.Errorf("error writing rss feed: %w", err)
+	}
 
-	baseCSSFile, fsError := skeletonFS.Open("skeletons/base.css")
-	if fsError != nil {
-		exitWithError("Couldn't read base.css", fsError.Error())
+	baseCSSFile, err := skeletonFS.Open("skeletons/base.css")
+	if err != nil {
+		return fmt.Errorf("couldn't read base.css: %w", err)
 	}
 
 	if minifyOutput {
-		baseCSSOutput := createFile(filepath.Join(output, "base.css"))
 		if *verbose {
-			showInfo("Copying and minifying base.css.")
+			log.Println("Copying and minifying base.css.")
 		}
-		minifyError := minifier.Minify("text/css", baseCSSOutput, baseCSSFile)
-		if minifyError != nil {
-			exitWithError("Couldn't minify base.css", minifyError.Error())
+		baseCSSOutput, err := createFile(filepath.Join(output, "base.css"))
+		if err != nil {
+			return err
+		}
+
+		if err := minifier.Minify("text/css", baseCSSOutput, baseCSSFile); err != nil {
+			return fmt.Errorf("couldn't minify base.css: %w", err)
 		}
 	} else {
 		if *verbose {
-			showInfo("Copying base.css.")
+			log.Println("Copying base.css.")
 		}
-		copyDataIntoFile(baseCSSFile, filepath.Join(output, "base.css"))
-	}
-
-	if *verbose {
-		showInfo("Copying media directory.")
-	}
-	mediaCopyError := copy.Copy(filepath.Join(sourceFolder, "media"), filepath.Join(output, "media"))
-	if mediaCopyError != nil {
-		if os.IsNotExist(mediaCopyError) {
-			if *verbose {
-				showWarning("media directory couldn't be found and therefore couldn't be copied.")
-			}
-		} else {
-			exitWithError("Couldn't copy media directory", pagesFolderError.Error())
+		if err := copyDataIntoFile(baseCSSFile, filepath.Join(output, "base.css")); err != nil {
+			return err
 		}
 	}
 
 	if *verbose {
-		showInfo("Writing 404.html")
+		log.Println("Copying media directory.")
 	}
-	writeTemplateToFile(parsedTemplates.Lookup("404"), &customPageData{
+
+	if err := copy.Copy(filepath.Join(sourceFolder, "media"), filepath.Join(output, "media")); err != nil {
+		return fmt.Errorf("couldn't copy media directory: %w", err)
+	}
+
+	if *verbose {
+		log.Println("Writing 404.html")
+	}
+
+	return writeTemplateToFile(parsedTemplates.Lookup("404"), &customPageData{
 		pageConfig:  loadedPageConfig,
 		CustomPages: customPages,
 	}, output, "404.html", minifyOutput)
+}
+
+// cleanup deletes previously generated files.
+func cleanup(output string) error {
+	if *verbose {
+		log.Println("Clearing output directory.")
+	}
+
+	if err := removeAll(
+		filepath.Join(output, "media"),
+		filepath.Join(output, "articles"),
+		filepath.Join(output, "pages"),
+		filepath.Join(output, "favicon.ico"),
+		filepath.Join(output, "favicon.png"),
+		filepath.Join(output, "base.css"),
+		filepath.Join(output, "404.html"),
+		filepath.Join(output, "feed.xml"),
+	); err != nil {
+		return err
+	}
+	files, err := filepath.Glob(filepath.Join(output, "index*.html"))
+	if err != nil {
+		return fmt.Errorf("couldn't delete old index*.html files: %w", err)
+	}
+	for _, indexToDelete := range files {
+		os.Remove(indexToDelete)
+	}
+
+	return nil
 }
 
 // writeIndexFiles writes paginated index files. It supports both tagged
@@ -342,7 +395,7 @@ func writeIndexFiles(
 	firstIndexName string,
 	indexNameTemplate string,
 	outputFolder string,
-	minifyOutput bool) {
+	minifyOutput bool) error {
 
 	currentPageNumber := 1
 	lastPageNumber := len(indexedArticles) / loadedPageConfig.MaxIndexEntries
@@ -375,9 +428,13 @@ func writeIndexFiles(
 			data.PrevPageNum = currentPageNumber - 1
 		}
 
-		writeTemplateToFile(indexTemplate, data, outputFolder, pageName, minifyOutput)
+		if err := writeTemplateToFile(indexTemplate, data, outputFolder, pageName, minifyOutput); err != nil {
+			return nil
+		}
 		currentPageNumber++
 	}
+
+	return nil
 }
 
 func minInt(a, b int) int {
@@ -388,7 +445,7 @@ func minInt(a, b int) int {
 	return b
 }
 
-func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle, loadedPageConfig pageConfig) {
+func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle, loadedPageConfig pageConfig) error {
 	var mainAuthor *feeds.Author
 	if loadedPageConfig.Email != "" {
 		mainAuthor = &feeds.Author{
@@ -405,7 +462,11 @@ func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle,
 		feed.Link = &feeds.Link{Href: loadedPageConfig.URL}
 	}
 	if loadedPageConfig.CreationDate != "" {
-		feed.Created = timeFromRFC3339(loadedPageConfig.CreationDate)
+		var err error
+		feed.Created, err = time.Parse(time.RFC3339, loadedPageConfig.CreationDate)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, article := range articles {
@@ -429,13 +490,13 @@ func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle,
 		}
 		if article.podcastAudio != "" {
 			audioFilepath := filepath.Join(sourceFolder, article.podcastAudio)
-			audioFile, statError := os.Stat(audioFilepath)
-			if statError != nil {
-				exitWithError(fmt.Sprintf("Couldn't read podcast audio file '%s'", audioFilepath), statError.Error())
+			audioFile, err := os.Stat(audioFilepath)
+			if err != nil {
+				return fmt.Errorf("couldn't read podcast audio file '%s': %w", audioFilepath, err)
 			}
-			audioURL, joinError := joinURLParts(feed.Link.Href, article.podcastAudio)
-			if joinError != nil {
-				exitWithError("Couldn't generate audio URL", joinError.Error())
+			audioURL, err := joinURLParts(feed.Link.Href, article.podcastAudio)
+			if err != nil {
+				return fmt.Errorf("couldn't generate audio URL: %w", err)
 			}
 			newFeedItem.Enclosure = &feeds.Enclosure{
 				Type:   "audio/mp3",
@@ -445,23 +506,28 @@ func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle,
 		}
 		feed.Items = append(feed.Items, newFeedItem)
 		if loadedPageConfig.URL != "" {
-			articleURL, joinError := joinURLParts(loadedPageConfig.URL, article.File)
-			if joinError != nil {
-				exitWithError("Couldn't generate article URL", joinError.Error())
+			articleURL, err := joinURLParts(loadedPageConfig.URL, article.File)
+			if err != nil {
+				return fmt.Errorf("couldn't generate article URL: %w", err)
 			}
 			newFeedItem.Link = &feeds.Link{Href: articleURL}
 		}
 	}
 
-	rssFile := createFile(filepath.Join(outputFolder, "feed.xml"))
-	rssData, rssError := feed.ToRss()
-	if rssError != nil {
-		exitWithError("Couldn't generate RSS feed", rssError.Error())
+	rssFile, err := createFile(filepath.Join(outputFolder, "feed.xml"))
+	if err != nil {
+		return err
 	}
-	_, writeError := rssFile.WriteString(rssData)
-	if writeError != nil {
-		exitWithError("Couldn't write RSS feed", writeError.Error())
+	rssData, err := feed.ToRss()
+	if err != nil {
+		return fmt.Errorf("couldn't generate RSS feed: %w", err)
 	}
+	_, err = rssFile.WriteString(rssData)
+	if err != nil {
+		return fmt.Errorf("couldn't write RSS feed: %w", err)
+	}
+
+	return nil
 }
 
 // joinURLParts puts together two URL pieces without duplicating separators
@@ -470,9 +536,9 @@ func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle,
 // Using filepath.Join would cause incorrect separators on windows, as URLs
 // should always use forward slashes, but windows uses backward slashes.
 func joinURLParts(partOne, partTwo string) (string, error) {
-	url, parseError := url.Parse(partOne)
-	if parseError != nil {
-		return "", parseError
+	url, err := url.Parse(partOne)
+	if err != nil {
+		return "", err
 	}
 
 	url.Path = path.Join(url.Path, partTwo)
@@ -540,18 +606,17 @@ type indexData struct {
 	LastPageNum    int
 }
 
-func templateToString(temp *template.Template) string {
+func templateToString(temp *template.Template) (string, error) {
 	buffer := &bytes.Buffer{}
-	executionError := temp.Execute(buffer, nil)
-	if executionError != nil {
-		exitWithError(fmt.Sprintf("Couldn't execute template '%s'", temp.Name()), executionError.Error())
+	if err := temp.Execute(buffer, nil); err != nil {
+		return "", fmt.Errorf("couldn't execute template '%s': %w", temp.Name(), err)
 	}
-	return buffer.String()
+	return buffer.String(), nil
 }
 
-func templateToOptionalString(temp *template.Template) string {
+func templateToOptionalString(temp *template.Template) (string, error) {
 	if temp == nil {
-		return ""
+		return "", nil
 	}
 
 	return templateToString(temp)
@@ -568,12 +633,4 @@ type indexedArticle struct {
 	HumanTime    string
 	Content      string
 	Tags         []string
-}
-
-func timeFromRFC3339(value string) time.Time {
-	time, timeParseError := time.Parse(time.RFC3339, value)
-	if timeParseError != nil {
-		exitWithError(fmt.Sprintf("Couldn't parse time '%s'. Format must match RFC3339", value), timeParseError.Error())
-	}
-	return time
 }

@@ -10,7 +10,7 @@ import (
 	"syscall"
 )
 
-func serve(directoryToServe, basepath string, port int) {
+func serve(directoryToServe, basepath string, port int) error {
 	//Example in my case.
 	//go run . --input="../blog-test-source" --output="../blog-test" & go run demo/server.go --dir="../blog-test" --basepath="/blog-test/"
 
@@ -27,13 +27,12 @@ func serve(directoryToServe, basepath string, port int) {
 
 	dir := dirWith404Handler{http.Dir(directoryToServe)}
 	if basepath == "" {
-		log.Fatal(http.ListenAndServe(portString, http.FileServer(dir)))
-	} else {
-		//Making sure there's not too many or too little slashes ;)
-		basepath = "/" + strings.Trim(basepath, "/\\") + "/"
-		http.Handle(basepath, http.StripPrefix(basepath, http.FileServer(dir)))
-		log.Fatal(http.ListenAndServe(portString, nil))
+		return http.ListenAndServe(portString, http.FileServer(dir))
 	}
+	//Making sure there's not too many or too little slashes ;)
+	basepath = "/" + strings.Trim(basepath, "/\\") + "/"
+	http.Handle(basepath, http.StripPrefix(basepath, http.FileServer(dir)))
+	return http.ListenAndServe(portString, nil)
 }
 
 type dirWith404Handler struct {
@@ -46,13 +45,10 @@ type dirWith404Handler struct {
 func (d dirWith404Handler) Open(name string) (http.File, error) {
 	file, err := d.dir.Open(name)
 	if os.IsNotExist(err) {
-		file404, newError := d.dir.Open("404.html")
-		if newError != nil {
-			return nil, newError
-		}
+		file404, err := d.dir.Open("404.html")
 		//Technically we'd need the old error to indicate 404 to the
 		//browser, but for demo/test purposes, this'll do.
-		return file404, nil
+		return file404, err
 	}
 	return file, err
 }

@@ -24,72 +24,71 @@ func init() {
 	})
 }
 
-func createFile(path string) *os.File {
-	_, statError := os.Stat(path)
-	if statError == nil {
-		os.Remove(path)
-	}
-	file, fileError := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0400)
-	if fileError != nil {
-		exitWithError(fmt.Sprintf("Couldn't create file '%s'", path), fileError.Error())
-	}
-
-	return file
+func createFile(path string) (*os.File, error) {
+	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0400)
 }
 
-func writeTemplateToFile(sourceTemplate *template.Template, data interface{}, outputFolder, path string, minifyOutput bool) {
-	filePath := filepath.Join(outputFolder, path)
-	var file io.Writer = createFile(filePath)
+func writeTemplateToFile(sourceTemplate *template.Template, data interface{}, outputFolder, path string, minifyOutput bool) error {
+	file, err := createFile(filepath.Join(outputFolder, path))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
 	if minifyOutput {
 		//minify.Writer sadly doesn't work, the files end up empty.
 		templateBuffer := &bytes.Buffer{}
-		executeError := sourceTemplate.Execute(templateBuffer, data)
-		if executeError != nil {
-			exitWithError(fmt.Sprintf("Couldn't execute template '%s'", sourceTemplate.Name()), executeError.Error())
+		if err := sourceTemplate.Execute(templateBuffer, data); err != nil {
+			return fmt.Errorf("error executing template '%s': %w", sourceTemplate.Name(), err)
 		}
 
-		minifyError := minifier.Minify("text/html", file, templateBuffer)
-		if minifyError != nil {
-			exitWithError(fmt.Sprintf("Couldn't minify file '%s'", filePath), minifyError.Error())
+		if err := minifier.Minify("text/html", file, templateBuffer); err != nil {
+			return fmt.Errorf("error minifying template '%s': %w", sourceTemplate.Name(), err)
 		}
 	} else {
-		executeError := sourceTemplate.Execute(file, data)
-		if executeError != nil {
-			exitWithError(fmt.Sprintf("Couldn't execute template '%s'", sourceTemplate.Name()), executeError.Error())
+		if err := sourceTemplate.Execute(file, data); err != nil {
+			return fmt.Errorf("error executing template '%s': %w", sourceTemplate.Name(), err)
 		}
 	}
+
+	return nil
 }
 
-func copyDataIntoFile(source io.Reader, targetPath string) {
-	target := createFile(targetPath)
-	defer target.Close()
-
-	_, copyError := io.Copy(target, source)
-	if copyError != nil {
-		exitWithError(fmt.Sprintf("Couldn't copy data into file '%s'", targetPath), copyError.Error())
+func copyDataIntoFile(source io.Reader, targetPath string) error {
+	target, err := createFile(targetPath)
+	if err != nil {
+		return err
 	}
-	target.Close()
+	defer target.Close()
+	_, err = io.Copy(target, source)
+	return err
 }
 
-func copyFileByPath(sourcePath, targetPath string) {
-	source, openError := os.Open(sourcePath)
-	if openError != nil {
-		exitWithError(fmt.Sprintf("Couldn't copy file '%s' to '%s'", sourcePath, targetPath), openError.Error())
+func copyFileByPath(sourcePath, targetPath string) error {
+	source, err := os.Open(sourcePath)
+	if err != nil {
+		return err
 	}
 	defer source.Close()
-	copyDataIntoFile(source, targetPath)
+	return copyDataIntoFile(source, targetPath)
 }
 
-func createDirectory(path string) {
-	_, statError := os.Stat(path)
-	if statError != nil {
-		if os.IsNotExist(statError) {
-			mkDirError := os.MkdirAll(path, 0755)
-			if mkDirError != nil {
-				exitWithError(fmt.Sprintf("Couldn't create directory '%s'", path), mkDirError.Error())
-			}
-		} else {
-			exitWithError(fmt.Sprintf("Couldn't create directory '%s'", path), statError.Error())
+func createDirectories(paths ...string) error {
+	for _, path := range paths {
+		if err := os.MkdirAll(path, 0755); err != nil {
+			return err
 		}
 	}
+
+	return nil
+}
+
+func removeAll(paths ...string) error {
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -10,15 +10,19 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func live(sourceFolder, basepath string, config string, port int) {
+func live(sourceFolder, basepath string, config string, port int) error {
 	// Initial build
 	target := "./.tmp"
-	build(sourceFolder, target, config, false)
+	if err := build(sourceFolder, target, config, false); err != nil {
+		// We don't return an error here, since the user can simply try
+		// fixing the issue, causing the watcher to automatically rebuild.
+		log.Println("Error rebuilding:", err)
+	}
 
 	// Then watch for changes and rebuild.
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer watcher.Close()
 
@@ -40,8 +44,11 @@ func live(sourceFolder, basepath string, config string, port int) {
 					debouncer(func() {
 						log.Println("Rebuilding ...", event)
 						now := time.Now()
-						build(sourceFolder, target, config, false)
-						log.Printf("Rebuild done. (%s)\n", time.Since(now).String())
+						if err := build(sourceFolder, target, config, false); err != nil {
+							log.Println("Error rebuilding:", err)
+						} else {
+							log.Printf("Rebuild successful. (%s)\n", time.Since(now).String())
+						}
 					})
 				}
 			case err, ok := <-watcher.Errors:
@@ -67,9 +74,8 @@ func live(sourceFolder, basepath string, config string, port int) {
 		return nil
 	})
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
-	serve(target, basepath, port)
-
+	return serve(target, basepath, port)
 }

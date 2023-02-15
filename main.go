@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 )
@@ -28,7 +28,10 @@ func generateLiveCmd() *cobra.Command {
 	basepath := buildCmd.Flags().StringP("basepath", "b", "", "Defines the path at which the directory is served. (For example /hello for http://localhost:8080/hello).")
 	port := buildCmd.Flags().IntP("port", "p", 8080, "Decides which port the HTTP server is run on.")
 	buildCmd.Run = func(cmd *cobra.Command, args []string) {
-		live(args[0], *basepath, *config, *port)
+		if err := live(args[0], *basepath, *config, *port); err != nil {
+			log.Println("Error serving files in dev mode:")
+			log.Println(err)
+		}
 	}
 
 	return buildCmd
@@ -48,9 +51,12 @@ func generateBuildCmd() *cobra.Command {
 	buildCmd.Run = func(cmd *cobra.Command, args []string) {
 		source := args[0]
 		if source == *output {
-			fmt.Println("Error: Source and output can't be the same.")
+			log.Println("Error: Source and output can't be the same.")
 		} else {
-			build(source, *output, *config, *minifyOutput)
+			if err := build(source, *output, *config, *minifyOutput); err != nil {
+				log.Println("Error during build:")
+				log.Println(err.Error())
+			}
 		}
 	}
 
@@ -68,7 +74,9 @@ func generateServeCmd() *cobra.Command {
 	basepath := serveCmd.Flags().StringP("basepath", "b", "", "Defines the path at which the directory is served. (For example /hello for http://localhost:8080/hello).")
 	port := serveCmd.Flags().IntP("port", "p", 8080, "Decides which port the HTTP server is run on.")
 	serveCmd.Run = func(cmd *cobra.Command, args []string) {
-		serve(args[0], *basepath, *port)
+		if err := serve(args[0], *basepath, *port); err != nil {
+			log.Println("Error serving directory:", err)
+		}
 	}
 
 	return serveCmd
