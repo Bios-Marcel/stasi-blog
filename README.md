@@ -4,12 +4,16 @@ A small generator for **sta**tic and **si**mple **blog**s.
 
 ## Overview
 
-- [Installation](#installation)
-   - [go get](#go-get)
-   - [Building](#building)
-- [Usage](#Usage)
-- [Example](#example)
-- [Features](#features)
+- [stasi-blog](#stasi-blog)
+  - [Overview](#overview)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Documentation](#documentation)
+  - [Features](#features)
+    - [Desktop-only features](#desktop-only-features)
+    - [Feature only available with JS](#feature-only-available-with-js)
+    - [Future](#future)
+
 
 ## Installation
 
@@ -18,8 +22,6 @@ or there's no binary for your platform, you can easily build the project
 yourself.
 
 All you need is a terminal and [Golang 1.18 or later](https://golang.org/dl/).
-
-## Installation via go
 
 Run:
 
@@ -37,63 +39,21 @@ set, the default location should be `~/go`. On my machine, this would be
 In order to be able to run the tool via your terminal, you have to put
 `~/go/bin` onto your `PATH` variable.
 
-## Building
-
-The second option is to manually download the source code and execute the build command.
-
-You can download the source code via the GitHub webpage or by using `git`, which
-you can get [here](https://git-scm.com/downloads) or from your distributions
-package manager, if your system offers one.
-
-In order to download via `git`, open a terminal and run:
-
-```sh
-git clone https://github.com/Bios-Marcel/stasi-blog.git
-```
-
-This downloads the source code to your current working directory.
-
-To produce a self-contained binary, open your terminal, navigate to the
-directory where you downloaded the source code to and run:
-
-```sh
-go build .
-```
-
-This will produce a binary called `stasi-blog` or `stasi-blog.exe` if you are
-on Windows.
-
-To test whether everything works, you can compile and run the example:
-
-```sh
-./stasi-blog build ./example --output="example-output"
-./stasi-blog serve ./example-output
-```
-
-Then open [localhost:8080](http://localhost:8080) in your browser.
-
-**DO NOT USE THE DEMO SERVER IN PRODUCTION!**
-
-If you want to update your build, run `git pull` in the source code
-direcotry to get the latest changes and run `go build .` again.
-
 ## Usage
 
-There's an input and an output folder. Both of these can be specified via
-the respective parameters `input` and `output`.
+In order to initialise a fresh blog (derived from the example), run:
 
-As for the input folder structure, the following is expected:
-
-```plain
-input
-|--media             <-- Images, Videos and such
-|--pages             <-- Optional static pages
-|  |--about.html     <-- Example page
-|--articles          <-- Contains blog posts
-|  |--post-one.html  <-- Example post
-|--config.json       <-- Basic page information
-|--favicon.ico/png   <-- Icon to show in browser; To disable, set "UseFavicon" to false
+```shell
+stasi-blog init TARGET_FOLDER
 ```
+
+Replace `TARGET_FOLDER` with whatever you want the target directory
+to be. There's a basic `README.md` in the generated directory.
+
+Running the example will explain how things work, as the example is
+self-documenting.
+
+TODO Review rest / Update docs.md
 
 An example for the `config.json`:
 
@@ -148,10 +108,6 @@ To view all available parameters, run:
 ```shell
 ./stasi-blog --help
 ```
-
-## Example
-
-An example can be found in the `example` folder at the root of the repository.
 
 ## Documentation
 

@@ -13,8 +13,25 @@ func main() {
 	rootCmd.PersistentFlags().BoolVarP(verbose, "verbose", "v", false, "Decides whether additional, potentially unnecessary extra information, is printed to the terminal.")
 	rootCmd.AddCommand(generateBuildCmd())
 	rootCmd.AddCommand(generateLiveCmd())
+	rootCmd.AddCommand(generateInitCmd())
 	rootCmd.AddCommand(generateServeCmd())
 	rootCmd.Execute()
+}
+
+func generateInitCmd() *cobra.Command {
+	initCmd := &cobra.Command{
+		Use:     "init directory",
+		Short:   "init creates the initial folder structure required to create a blog",
+		Aliases: []string{"setup", "bootstrap"},
+		Args:    cobra.ExactArgs(1),
+	}
+	initCmd.Run = func(cmd *cobra.Command, args []string) {
+		if err := initDir(args[0]); err != nil {
+			log.Printf("Error initialising folder structure:\n\t%s\n", err)
+		}
+	}
+
+	return initCmd
 }
 
 func generateLiveCmd() *cobra.Command {
