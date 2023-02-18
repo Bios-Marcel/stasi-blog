@@ -3,3 +3,6 @@ output/
 stasi-blog
 stasi-blog.exe
 stasi-blog-darwin
+.tmp/
+tmp/
+*.out
