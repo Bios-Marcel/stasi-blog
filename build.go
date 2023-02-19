@@ -518,6 +518,8 @@ func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle,
 	if err != nil {
 		return err
 	}
+	defer rssFile.Close()
+
 	rssData, err := feed.ToRss()
 	if err != nil {
 		return fmt.Errorf("couldn't generate RSS feed: %w", err)
