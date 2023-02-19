@@ -39,9 +39,10 @@ type dirWith404Handler struct {
 	dir http.Dir
 }
 
-// Open implements FileSystem using os.Open, opening files for reading rooted
-// and relative to the directory d. If a file can't be found, we return a 404
-// page instead.
+// Open implements [fs.FileSystem] by using os.Open. Additionally to the
+// default implementation of [http.Dir], this implementation returns a 404
+// page located at the root of the specified filesystem directory if the
+// requested path doesn't correspond to a path.
 func (d dirWith404Handler) Open(name string) (http.File, error) {
 	file, err := d.dir.Open(name)
 	if os.IsNotExist(err) {
