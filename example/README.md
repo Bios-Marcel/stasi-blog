@@ -12,7 +12,7 @@ stasi-blog serve ./example-output
 For a development environment, run:
 
 ```shell
-staso-blog dev ./example
+stasi-blog dev ./example
 ```
 
 This will cause all changes to the `./example` folder to be reflected live.
