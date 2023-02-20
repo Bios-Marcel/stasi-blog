@@ -18,6 +18,10 @@ func initDir(directory string) error {
 	}
 
 	return fs.WalkDir(exampleFS, "example", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if path == "example" {
 			return nil
 		}
