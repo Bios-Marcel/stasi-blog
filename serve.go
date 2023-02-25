@@ -23,7 +23,7 @@ func serve(directoryToServe, basepath string, port int) error {
 
 	log.Printf("Serving %s at http://localhost:%d%s", directoryToServe, port, basepath)
 	log.Println("Please remember to only use this command to serve your website in a development scenario.")
-	portString := fmt.Sprintf(":%d", port)
+	portString := fmt.Sprintf("localhost:%d", port)
 
 	dir := dirWith404Handler{http.Dir(directoryToServe)}
 	if basepath == "" {
