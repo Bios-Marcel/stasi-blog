@@ -2,15 +2,16 @@
 :root {
     --bg: #f7f2e3;
     --fg: #302d2d;
-    --bg-contrast: #e7e2e2;
-    --anchor: #4183C4;
+    --bg-contrast: #eee;
+    --anchor: #46c;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg: #2c2c2c;
-        --fg: #d5d5d5;
-        --bg-contrast: #3b3a3a;
+        --bg: #222;
+        --fg: #ddd;
+        --anchor: #49c;
+        --bg-contrast: #333;
     }
 }
 
