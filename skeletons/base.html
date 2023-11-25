@@ -1,24 +1,28 @@
 {{define "header"}}<div class="site-info">
-<span class="site-name"><a href="{{.BasePath}}/">{{.SiteName}}</a></span>
+        <a class="site-name" href="{{.BasePath}}/">{{.SiteName}}</a>
 </div>
 <nav>{{$BasePath := .BasePath}}
-<a class="menu-link" href="{{.BasePath}}/">Home</a>{{range .CustomPages}}
-<a class="menu-link" href="{{$BasePath}}/{{.File}}">{{.Title}}</a>{{end}}
+        <a href="{{.BasePath}}/">Home</a>{{range .CustomPages}}
+        <a href="{{$BasePath}}/{{.File}}">{{.Title}}</a>{{end}}
 </nav>{{end}}
 
-{{define "base-header"}}<link rel="stylesheet" type="text/css" href="{{.BasePath}}/base.css">
+{{define "base-header"}}
+<link rel="stylesheet" type="text/css" href="{{.BasePath}}/base.css">
 {{/* Avoids favicon request or adds favicon */}}
-<link rel="icon" href="{{if .UseFavicon}}{{.BasePath}}/favicon.ico{{else}}data:,{{end}}"/>{{end}}
+<link rel="icon" href="{{if .UseFavicon}}{{.BasePath}}/favicon.ico{{else}}data:,{{end}}" />{{end}}
 
-{{define "base-metadata"}}<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>{{end}}
+{{define "base-metadata"}}
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />{{end}}
 {{define "opt-metadata"}}{{if .Author}}
-<meta name="author" content="{{.Author}}"/>{{end}}{{if .Description}}
+<meta name="author" content="{{.Author}}" />{{end}}{{if .Description}}
 <meta name="description" content="{{.Description}}" />{{end}}
-<meta property="og:locale" content="en_GB"/>
-<meta property="og:site_name" content="{{.SiteName}}"/>{{end}}
+<meta property="og:locale" content="en_GB" />
+<meta property="og:site_name" content="{{.SiteName}}" />{{end}}
 
-{{define "footer"}}<hr>
-<div class="footer-bar">
-<a href="{{.BasePath}}/feed.xml">RSS-Feed</a>
-</div>{{end}}
+{{define "footer"}}
+<hr>
+<div>
+        <a href="{{.BasePath}}/feed.xml">RSS-Feed</a>
+</div>
+{{end}}

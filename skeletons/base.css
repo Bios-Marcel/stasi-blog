@@ -58,7 +58,7 @@ nav {
     margin: auto 0 auto 0;
 }
 
-.menu-link {
+nav > a {
     white-space: nowrap;
 }
 
@@ -73,7 +73,7 @@ nav {
     display: block;
 }
 
-.article-entry {
+.articles > div {
     margin-bottom: 1em;
 }
 
@@ -81,7 +81,14 @@ nav {
     margin: 0;
 }
 
-.article-tag+.article-tag::before {
+.article-tags {
+    display: inline-block;
+}
+.article-tags::before {
+    content: " - ";
+    white-space: pre;
+}
+.article-tags > *:not(:first-child)::before {
     content: ", ";
 }
 
@@ -96,7 +103,7 @@ nav {
     margin-bottom: 0.3em;
 }
 
-.tag-list {
+.tags > div {
     display: flex;
     flex-direction: column
 }
@@ -172,11 +179,10 @@ code>pre {
 /* FOOTER */
 footer {
     margin-top: 3em;
-    display: block;
     margin-bottom: 0.5em;
 }
 
-.footer-bar {
+footer > div {
     display: flex;
     justify-content: center;
     column-gap: 1em;
@@ -199,7 +205,7 @@ footer {
         padding: 0.2em 0.5em 0.2em 0.5em;
     }
 
-    .menu-link {
+    nav > a {
         font-size: 1.5em;
     }
 
@@ -214,7 +220,6 @@ footer {
 
 /* ADJUSTMENTS FOR BROWSER BUILTIN PRINT FUNCTION */
 @media print {
-
     header,
     footer {
         display: none;

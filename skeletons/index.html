@@ -1,38 +1,63 @@
-{{define "index"}}<!DOCTYPE html>
+{{define "index"}}
+<!DOCTYPE html>
 <html lang="en-GB">
+
 <head>
-{{template "base-header" .}}
-<title>{{.SiteName}}</title>
-{{template "base-metadata" .}}{{if .AddOptionalMetaData}}
-{{template "opt-metadata" .}}
-<meta property="og:type" content="website" />{{end}}
+        {{template "base-header" .}}
+        <title>{{.SiteName}}</title>
+        {{template "base-metadata" .}}{{if .AddOptionalMetaData}}
+        {{template "opt-metadata" .}}
+        <meta property="og:type" content="website" />{{end}}
 </head>
+
 <body>
-<header>
-{{template "header" .}}
-</header>
-<div class="index-content">
-<div class="articles">{{range .IndexedArticles}}
-<div class="article-entry"><a href="{{.BasePath}}/{{.File}}"><h2 class="article-title">{{.Title}}</h2></a>
-<i>{{.HumanTime}}</i>{{if .Tags}} - {{range .Tags}}<span class="article-tag">{{.}}</span>{{end}}{{end}}</div>{{end}}
-</div>{{$filterTag := .FilterTag}}
-{{if .Tags}}<div class="tags">
-<h2>Tags</h2><div class="tag-list">{{$BasePath := .BasePath}}{{range .Tags}}
-<a href="{{$BasePath}}/index-{{.}}.html">{{if eq $filterTag .}}> {{end}}{{.}}</a>{{end}}
-</div></div>{{end}}
-</div>
-<div class="pager">
-<a href="{{.BasePath}}/{{.FirstPage}}">First (1)</a>...{{if eq .PrevPageNum 1}}<a href="{{.BasePath}}/{{.FirstPage}}">1</a>
-{{else if gt .PrevPageNum 1}}{{if and (eq .CurrentPageNum .LastPageNum) (gt .CurrentPageNum 2)}}{{if eq .CurrentPageNum 3}}<a href="{{.BasePath}}/{{.FirstPage}}">1</a>
-{{else}}<a href="{{.BasePath}}/{{printf .PageNameTemplate (sub .CurrentPageNum 2)}}">{{sub .CurrentPageNum 2}}</a>
-{{end}}{{end}}<a href="{{.BasePath}}/{{printf .PageNameTemplate .PrevPageNum}}">{{.PrevPageNum}}</a>
-{{end}}<b>{{.CurrentPageNum}}</b>
-{{if gt .NextPageNum 1}}<a href="{{.BasePath}}/{{printf .PageNameTemplate .NextPageNum}}">{{.NextPageNum}}</a>
-{{end}}{{if and (eq .CurrentPageNum 1) (ge .LastPageNum 3)}}<a href="{{.BasePath}}/{{printf .PageNameTemplate (add .NextPageNum 1)}}">{{add .NextPageNum 1}}</a>
-{{end}}...<a href="{{.BasePath}}/{{if eq .LastPageNum 1}}{{.FirstPage}}{{else}}{{printf .PageNameTemplate .LastPageNum}}{{end}}">Last ({{.LastPageNum}})</a>
-</div>
-<footer>
-{{template "footer" .}}
-</footer>
+        <header>
+                {{template "header" .}}
+        </header>
+        <div class="index-content">
+                <div class="articles">{{range .IndexedArticles}}
+                        <div>
+                                <a href="{{.BasePath}}/{{.File}}">
+                                        <h2 class="article-title">{{.Title}}</h2>
+                                </a>
+                                <i>{{.HumanTime}}</i>
+                                {{if .Tags}}
+                                <div class="article-tags">
+                                        {{range .Tags}}<span>{{.}}</span>{{end}}
+                                </div>
+                                {{end}}
+                        </div>{{end}}
+                </div>
+
+                {{$filterTag := .FilterTag}}
+                {{if .Tags}}<div class="tags">
+                        <h2>Tags</h2>
+                        <div>{{$BasePath := .BasePath}}{{range .Tags}}
+                                <a href="{{$BasePath}}/index-{{.}}.html">{{if eq $filterTag .}}> {{end}}{{.}}</a>{{end}}
+                        </div>
+                </div>{{end}}
+        </div>
+        <div class="pager">
+                <a href="{{.BasePath}}/{{.FirstPage}}">First (1)</a>...{{if eq .PrevPageNum 1}}<a
+                        href="{{.BasePath}}/{{.FirstPage}}">1</a>
+                {{else if gt .PrevPageNum 1}}{{if and (eq .CurrentPageNum .LastPageNum) (gt .CurrentPageNum 2)}}{{if eq
+                .CurrentPageNum 3}}<a href="{{.BasePath}}/{{.FirstPage}}">1</a>
+                {{else}}<a href="{{.BasePath}}/{{printf .PageNameTemplate (sub .CurrentPageNum 2)}}">{{sub
+                        .CurrentPageNum 2}}</a>
+                {{end}}{{end}}<a href="{{.BasePath}}/{{printf .PageNameTemplate .PrevPageNum}}">{{.PrevPageNum}}</a>
+                {{end}}<b>{{.CurrentPageNum}}</b>
+                {{if gt .NextPageNum 1}}<a
+                        href="{{.BasePath}}/{{printf .PageNameTemplate .NextPageNum}}">{{.NextPageNum}}</a>
+                {{end}}{{if and (eq .CurrentPageNum 1) (ge .LastPageNum 3)}}<a
+                        href="{{.BasePath}}/{{printf .PageNameTemplate (add .NextPageNum 1)}}">{{add .NextPageNum
+                        1}}</a>
+                {{end}}...<a
+                        href="{{.BasePath}}/{{if eq .LastPageNum 1}}{{.FirstPage}}{{else}}{{printf .PageNameTemplate .LastPageNum}}{{end}}">Last
+                        ({{.LastPageNum}})</a>
+        </div>
+        <footer>
+                {{template "footer" .}}
+        </footer>
 </body>
+
 </html>{{end}}
