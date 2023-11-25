@@ -10,10 +10,10 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func live(sourceFolder, basepath string, config string, port int) error {
+func live(sourceFolder, basepath, config string, port int, minifiyOutput bool) error {
 	// Initial build
 	target := "./.tmp"
-	if err := build(sourceFolder, target, config, false); err != nil {
+	if err := build(sourceFolder, target, config, minifiyOutput); err != nil {
 		// We don't return an error here, since the user can simply try
 		// fixing the issue, causing the watcher to automatically rebuild.
 		log.Println("Error rebuilding:", err)
