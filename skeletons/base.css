@@ -25,7 +25,7 @@ body {
     background: var(--bg);
     color: var(--fg);
     margin: 1em auto auto auto;
-    width: 50%;
+    width: min(50rem, 90%);
 }
 
 a {
