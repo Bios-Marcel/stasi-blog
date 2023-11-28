@@ -1,39 +1,50 @@
-{{define "article"}}<!DOCTYPE html>
+{{define "article"}}
+<!DOCTYPE html>
 <html lang="en-GB">
+
 <head>
-{{template "base-header" .}}
-<title>{{template "title"}} | {{.SiteName}}</title>
-{{template "base-metadata" .}}{{if .AddOptionalMetaData}}
-{{template "opt-metadata" .}}
-<meta property="og:title" content="{{template "title"}}" />
-<meta property="og:type" content="article"/>{{if .Tags}}{{range .Tags}}
-<meta property="article:tag" content="{{.}}"/>{{end}}{{end}}
-<meta property="article:published_time" content="{{.RFC3339Time}}" />{{end}}
+        {{template "base-header" .}}
+        <title>{{template "title"}} | {{.SiteName}}</title>
+        {{template "base-metadata" .}}{{if .AddOptionalMetaData}}
+        {{template "opt-metadata" .}}
+        <meta property="og:title" content="{{template `title`}}" />
+        <meta property="og:type" content="article" />{{if .Tags}}{{range .Tags}}
+        <meta property="article:tag" content="{{.}}" />{{end}}{{end}}
+        <meta property="article:published_time" content="{{.RFC3339Time}}" />{{end}}
 </head>
+
 <body>
-<header>
-{{template "header" .}}
-</header>
-<article>
-<h1>{{template "title"}}</h1>
-<p class="authoring-info">Written on {{.HumanTime}}{{if .Author}} by {{.Author}}{{end}}</p>{{if .PodcastAudio}}
-<audio controls>
-<source src="{{.PodcastAudio}}" type="audio/mp3">
-Your browser is unable to play this audio.
-</audio>{{end}}
-{{template "content" .}}
-{{if .UtterancesRepo}}<script src="https://utteranc.es/client.js"
-        repo="{{.UtterancesRepo}}"
-        issue-term="title"
-        theme="preferred-color-scheme"
-        async>
-</script>
-<noscript>
-<p><b>If you wish to access the comment section, you need to enable JavaScript.</b></p>
-</noscript>{{end}}
-</article>
-<footer>
-{{template "footer" .}}
-</footer>
+        <header>
+                {{template "header" .}}
+        </header>
+        <article>
+                <h1>{{template "title"}}</h1>
+                <p class="authoring-info">Written on {{.HumanTime}}{{if .Author}} by {{.Author}}{{end}}</p>{{if
+                .PodcastAudio}}
+                <audio controls>
+                        <source src="{{.PodcastAudio}}" type="audio/mp3">
+                        Your browser is unable to play this audio.
+                </audio>{{end}}
+                {{template "content" .}}
+                {{if .UtterancesRepo}}
+                <script src="https://utteranc.es/client.js" repo="{{.UtterancesRepo}}" issue-term="title"
+                        theme="preferred-color-scheme" async>
+                        </script>
+                <noscript>
+                        <hr />
+                        <p><b>If you wish to access the comment section, you need to enable JavaScript.</b></p>
+
+                        <p>Alternatively, you can try reading the comment directly on GitHub:</p>
+
+                        <a
+                                href="https://github.com/{{.UtterancesRepo}}/issues?q=is%3Aissue+is%3Aopen+%22{{template `title`}}%22+in%3Atitle">
+                                Find comments for {{template "title"}}
+                        </a>
+                </noscript>{{end}}
+        </article>
+        <footer>
+                {{template "footer" .}}
+        </footer>
 </body>
+
 </html>{{end}}
