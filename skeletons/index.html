@@ -4,7 +4,7 @@
 
 <head>
         {{template "base-header" .}}
-        <title>{{.SiteName}}</title>
+        <title>{{if .FilterTag}}{{.FilterTag}} articles | {{end}}{{.SiteName}}</title>
         {{template "base-metadata" .}}{{if .AddOptionalMetaData}}
         {{template "opt-metadata" .}}
         <meta property="og:type" content="website" />{{end}}
