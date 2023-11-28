@@ -239,7 +239,9 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 
 		indexedArticles = append(indexedArticles, newIndexedArticle)
 
-		writeTemplateToFile(specificArticleTemplate, articleData, output, articleTargetPath, minifyOutput)
+		if err := writeTemplateToFile(specificArticleTemplate, articleData, output, articleTargetPath, minifyOutput); err != nil {
+			return fmt.Errorf("error writing article: %w", err)
+		}
 	}
 
 	//Sort articles to make sure the RSS feed and index have the right ordering.
