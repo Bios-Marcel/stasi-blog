@@ -416,7 +416,7 @@ func writeIndexFiles(
 			Tags:             tags,
 			FilterTag:        filterTag,
 			CustomPages:      customPages,
-			IndexedArticles:  indexedArticles[i-1 : minInt(i-1+loadedPageConfig.MaxIndexEntries, len(indexedArticles))],
+			IndexedArticles:  indexedArticles[i-1 : min(i-1+loadedPageConfig.MaxIndexEntries, len(indexedArticles))],
 			PageNameTemplate: indexNameTemplate,
 			CurrentPageNum:   currentPageNumber,
 			FirstPage:        firstIndexName,
@@ -436,14 +436,6 @@ func writeIndexFiles(
 	}
 
 	return nil
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
 }
 
 func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle, loadedPageConfig pageConfig) error {

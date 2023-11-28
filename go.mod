@@ -1,6 +1,6 @@
 module github.com/Bios-Marcel/stasi-blog
 
-go 1.18
+go 1.21
 
 require (
 	github.com/Bios-Marcel/feeds v1.1.2
