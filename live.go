@@ -13,10 +13,13 @@ import (
 func live(sourceFolder, basepath, config string, port int, minifiyOutput bool) error {
 	// Initial build
 	target := "./.tmp"
-	if err := build(sourceFolder, target, config, minifiyOutput); err != nil {
+	build := func() error {
+		return build(sourceFolder, target, config, minifiyOutput)
+	}
+	if err := build(); err != nil {
 		// We don't return an error here, since the user can simply try
 		// fixing the issue, causing the watcher to automatically rebuild.
-		log.Println("Error rebuilding:", err)
+		log.Println("Error running initial build:", err)
 	}
 
 	// Then watch for changes and rebuild.
@@ -50,7 +53,7 @@ func live(sourceFolder, basepath, config string, port int, minifiyOutput bool) e
 				debouncer(func() {
 					log.Println("Rebuilding ...", event)
 					now := time.Now()
-					if err := build(sourceFolder, target, config, false); err != nil {
+					if err := build(); err != nil {
 						log.Println("Error rebuilding:", err)
 					} else {
 						log.Printf("Rebuild successful. (%s)\n", time.Since(now).String())
@@ -60,7 +63,7 @@ func live(sourceFolder, basepath, config string, port int, minifiyOutput bool) e
 				if !channelOpen {
 					return
 				}
-				log.Println("error:", err)
+				log.Println("watcher error:", err)
 			}
 		}
 	}()
