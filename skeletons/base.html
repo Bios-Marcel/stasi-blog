@@ -1,8 +1,9 @@
 {{define "header"}}
 <a class="site-name" href="{{.BasePath}}/">{{.SiteName}}</a>
 <nav>{{$BasePath := .BasePath}}
-        <a href="{{.BasePath}}/">Home</a>{{range .CustomPages}}
-        <a href="{{$BasePath}}/{{.File}}">{{.Title}}</a>{{end}}
+        <a href="{{.BasePath}}/">Home</a>
+        <a href="{{.BasePath}}/feed.xml">RSS-Feed</a>
+        {{range .CustomPages}}<a href="{{$BasePath}}/{{.File}}">{{.Title}}</a>{{end}}
 </nav>{{end}}
 
 {{define "base-header"}}
@@ -18,10 +19,3 @@
 <meta name="description" content="{{.Description}}" />{{end}}
 <meta property="og:locale" content="en_GB" />
 <meta property="og:site_name" content="{{.SiteName}}" />{{end}}
-
-{{define "footer"}}
-<hr>
-<div>
-        <a href="{{.BasePath}}/feed.xml">RSS-Feed</a>
-</div>
-{{end}}

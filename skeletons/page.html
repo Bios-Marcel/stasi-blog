@@ -1,20 +1,21 @@
-{{define "page"}}<!DOCTYPE html>
+{{define "page"}}
+<!DOCTYPE html>
 <html lang="en-GB">
+
 <head>
-{{template "base-header" .}}
-<title>{{template "title"}} | {{.SiteName}}</title>
-{{template "base-metadata" .}}{{if .AddOptionalMetaData}}
-{{template "opt-metadata" .}}
-<meta property="og:type" content="website" />{{end}}
+        {{template "base-header" .}}
+        <title>{{template "title"}} | {{.SiteName}}</title>
+        {{template "base-metadata" .}}{{if .AddOptionalMetaData}}
+        {{template "opt-metadata" .}}
+        <meta property="og:type" content="website" />{{end}}
 </head>
+
 <body>
-<header>
-{{template "header" .}}
-</header>
-<h1>{{template "title"}}</h1>
-{{template "content" .}}
-<footer>
-{{template "footer" .}}
-</footer>
+        <header>
+                {{template "header" .}}
+        </header>
+        <h1>{{template "title"}}</h1>
+        {{template "content" .}}
 </body>
+
 </html>{{end}}

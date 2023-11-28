@@ -107,6 +107,7 @@ nav > a {
     display: flex;
     gap: 0.5rem;
     justify-content: center;
+    margin-bottom: 1rem;
 }
 
 /* CONTENT */
@@ -173,18 +174,6 @@ code>pre {
     padding: 0.5em;
 }
 
-/* FOOTER */
-footer {
-    margin-top: 3em;
-    margin-bottom: 0.5em;
-}
-
-footer > div {
-    display: flex;
-    justify-content: center;
-    column-gap: 1em;
-}
-
 /* SMALL SCREEN ADJUSTMENTS */
 @media screen and (max-width: 720px) {
     body {
@@ -217,8 +206,7 @@ footer > div {
 
 /* ADJUSTMENTS FOR BROWSER BUILTIN PRINT FUNCTION */
 @media print {
-    header,
-    footer {
+    header {
         display: none;
     }
 

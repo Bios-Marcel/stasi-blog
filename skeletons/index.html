@@ -55,9 +55,6 @@
                         href="{{.BasePath}}/{{if eq .LastPageNum 1}}{{.FirstPage}}{{else}}{{printf .PageNameTemplate .LastPageNum}}{{end}}">Last
                         ({{.LastPageNum}})</a>
         </div>
-        <footer>
-                {{template "footer" .}}
-        </footer>
 </body>
 
 </html>{{end}}
