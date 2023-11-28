@@ -323,6 +323,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 		if err != nil {
 			return err
 		}
+		defer baseCSSOutput.Close()
 
 		if err := minifier.Minify("text/css", baseCSSOutput, baseCSSFile); err != nil {
 			return fmt.Errorf("couldn't minify base.css: %w", err)
