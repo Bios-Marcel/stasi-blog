@@ -10,8 +10,8 @@
     :root {
         --bg: #222;
         --fg: #ddd;
-        --anchor: #49c;
         --bg-contrast: #333;
+        --anchor: #49c;
     }
 }
 
@@ -40,14 +40,11 @@ header {
     margin-bottom: 3em;
 }
 
-.site-info {
-    flex: 1;
-    flex-basis: content;
-}
-
 .site-name {
     margin: 0;
     font-size: 2em;
+    flex: 1;
+    flex-basis: content;
 }
 
 nav {
@@ -55,7 +52,7 @@ nav {
     gap: 0.3em 1em;
     display: flex;
     flex-wrap: wrap;
-    margin: auto 0 auto 0;
+    margin: auto 0;
 }
 
 nav > a {
@@ -65,7 +62,6 @@ nav > a {
 /* INDEX */
 .index-content {
     display: flex;
-    flex-direction: row;
 }
 
 .articles {
@@ -76,8 +72,7 @@ nav > a {
 .articles > div {
     margin-bottom: 1em;
 }
-
-.article-title {
+.articles h2 {
     margin: 0;
 }
 
@@ -105,12 +100,11 @@ nav > a {
 
 .tags > div {
     display: flex;
-    flex-direction: column
+    flex-direction: column;
 }
 
 .pager {
     display: flex;
-    flex-direction: row;
     gap: 0.5rem;
     justify-content: center;
 }
@@ -136,6 +130,9 @@ article {
     display: inline-block;
     width: 100%;
 }
+article > h1 {
+    margin: 0;
+}
 
 table {
     border-collapse: collapse;
@@ -155,7 +152,7 @@ th {
 
 td,
 th {
-    padding: 0.4em 1.5em 0.4em 1.5em;
+    padding: 0.4em 1.5em;
 }
 
 code,
@@ -202,7 +199,7 @@ footer > div {
 
     td,
     th {
-        padding: 0.2em 0.5em 0.2em 0.5em;
+        padding: 0.2em 0.5em;
     }
 
     nav > a {

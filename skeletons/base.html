@@ -1,6 +1,5 @@
-{{define "header"}}<div class="site-info">
-        <a class="site-name" href="{{.BasePath}}/">{{.SiteName}}</a>
-</div>
+{{define "header"}}
+<a class="site-name" href="{{.BasePath}}/">{{.SiteName}}</a>
 <nav>{{$BasePath := .BasePath}}
         <a href="{{.BasePath}}/">Home</a>{{range .CustomPages}}
         <a href="{{$BasePath}}/{{.File}}">{{.Title}}</a>{{end}}
