@@ -24,13 +24,18 @@ html {
 body {
     background: var(--bg);
     color: var(--fg);
-    margin: 1em auto auto auto;
+    margin: 1rem auto 1rem auto;
     width: min(50rem, 90%);
 }
 
-a {
+a, a > * {
     color: var(--anchor);
     text-decoration: none;
+    width: fit-content;
+    display: inline;
+}
+a:hover, a:hover > * {
+    text-decoration: underline;
 }
 
 /* HEADER */
@@ -44,7 +49,6 @@ header {
     margin: 0;
     font-size: 2em;
     flex: 1;
-    flex-basis: content;
 }
 
 nav {
@@ -101,13 +105,13 @@ nav > a {
 .tags > div {
     display: flex;
     flex-direction: column;
+    align-items: end;
 }
 
 .pager {
     display: flex;
     gap: 0.5rem;
     justify-content: center;
-    margin-bottom: 1rem;
 }
 
 /* CONTENT */

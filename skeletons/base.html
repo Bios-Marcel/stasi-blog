@@ -1,5 +1,7 @@
 {{define "header"}}
-<a class="site-name" href="{{.BasePath}}/">{{.SiteName}}</a>
+<div class="site-name">
+        <a href="{{.BasePath}}/">{{.SiteName}}</a>
+</div>
 <nav>{{$BasePath := .BasePath}}
         <a href="{{.BasePath}}/">Home</a>
         <a href="{{.BasePath}}/feed.xml">RSS-Feed</a>
