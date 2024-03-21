@@ -1,8 +1,8 @@
 example-output/
 output/
 stasi-blog
-stasi-blog.exe
 stasi-blog-darwin
+*.exe
 .tmp/
 tmp/
 *.out
