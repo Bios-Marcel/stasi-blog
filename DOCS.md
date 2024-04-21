@@ -11,7 +11,7 @@ First, you'll have to [make a new GitHub repository](https://github.com/new).
 
 The repository should be public and has to be named `yourusername.github.io`.
 Here you simply replace `yourusername` with whatever your GitHub username
-is. For me for example, it would be ´Bios-Marcel.github.io`.
+is. For me for example, it would be `Bios-Marcel.github.io`.
 If you choose any name that differs from your account name, GitHub will instead
 setup a sub page, using the same address. For example if you'd name your
 repository `blog`, then the URL would be `https://yourusername.github.io/blog`.
@@ -98,14 +98,17 @@ TODO
 ## Writing an article
 
 Articles are currently written with plain HTML and require some meta
-information. A document for an article should look like this:
+information. The metadata uses YAML and is separated from the page content by a
+single line containing only `---`. A document for an article should look like
+this:
 
 ```
-{{define "title"}}Clickbait Title{{end}}
-{{define "description"}}My thoughts on X.{{end}}
-{{define "date"}}2020-12-10{{end}}
-{{define "tags"}}categoryA,categoryB{{end}}
-{{define "content"}}<p>TEXT</p>{{end}}
+title:Clickbait Title
+description: My thoughts on X.
+date: 2020-12-10
+tags: [categoryA,category]
+---
+<p>TEXT</p>
 ```
 
 The sections `tags` and `description` are optional.
@@ -124,8 +127,9 @@ is, that you only require the sections `title` and `content`.
 Meaning, that this would be enough already:
 
 ```
-{{define "title"}}Custom Page Name{{end}}
-{{define "content"}}<p>TEXT</p>{{end}}
+title: Custom Page Name
+---
+<p>TEXT</p>
 ```
 
 ## Tables with a rowhreader

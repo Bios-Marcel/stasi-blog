@@ -4,31 +4,62 @@ import (
 	"bytes"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Bios-Marcel/feeds"
+	"github.com/goccy/go-yaml"
 	"github.com/otiai10/copy"
 )
 
 //go:embed skeletons/*
 var skeletonFS embed.FS
 
+type ArticleHeaders struct {
+	Title       string `yaml:"title"`
+	Description string `yaml:"description"`
+	Date        string `yaml:"date"`
+	dateParsed  time.Time
+	Tags        []string `yaml:"tags"`
+
+	Author      string `yaml:"author"`
+	AuthorEmail string `yaml:"author-email"`
+
+	PodcastAudio string `yaml:"podcast-audio"`
+}
+
+func (headers *ArticleHeaders) Parse() error {
+	var errs []error
+
+	if headers.Date != "" {
+		dateParsed, err := time.Parse("2006-01-02", headers.Date)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		headers.dateParsed = dateParsed
+	}
+
+	return errors.Join(errs...)
+}
+
 func build(sourceFolder, output, config string, minifyOutput bool) error {
 	if err := cleanup(output); err != nil {
 		return fmt.Errorf("error performing cleanup: %w", err)
 	}
 
-	//Create empty directories
+	// Create empty directories
 	err := createDirectories(
 		filepath.Join(output, "media"),
 		filepath.Join(output, "articles"),
@@ -58,7 +89,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 		log.Fatalf("Error decoding config: %s\n", err)
 	}
 	if loadedPageConfig.BasePath != "" {
-		//Making sure there's not too many or too little slashes ;)
+		// Making sure there's not too many or too little slashes ;)
 		loadedPageConfig.BasePath = "/" + strings.Trim(loadedPageConfig.BasePath, `/\`)
 	}
 
@@ -101,8 +132,13 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 		return fmt.Errorf("couldn't handle pages directory: %w", err)
 	}
 
-	customPageTemplates := make(map[string]*template.Template, len(customPageFiles))
+	// We collect these to display them on the page header.
 	customPages := make([]*customPageEntry, len(customPageFiles))
+
+	if *verbose {
+		log.Printf("Indexing and writing custom pages ...\n")
+	}
+
 	for index, customPage := range customPageFiles {
 		customPageSkeletonClone, err := parsedTemplates.Lookup("page").Clone()
 		if err != nil {
@@ -110,20 +146,32 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 		}
 
 		sourcePath := filepath.Join(sourceFolder, "pages", customPage.Name())
-		customPageTemplate, err := customPageSkeletonClone.ParseFiles(sourcePath)
+		headers, rawContent, err := parsePage(sourcePath)
 		if err != nil {
-			return fmt.Errorf("couldn't parse custom page '%s': %w", customPage, err)
+			return fmt.Errorf("error parsing page '%s': %w", customPage.Name(), err)
 		}
 
-		customPageTemplates[customPage.Name()] = customPageTemplate
-
-		title, err := templateToString(customPageTemplate.Lookup("title"))
+		customPageTemplate, err := customPageSkeletonClone.Parse(`{{define "content"}}` + rawContent + `{{end}}`)
 		if err != nil {
-			return err
+			return fmt.Errorf("couldn't parse custom page '%s': %w", customPage.Name(), err)
 		}
+
+		data := &customPageData{
+			pageConfig:  loadedPageConfig,
+			CustomPages: customPages,
+		}
+		data.Title = headers.Title
 		customPages[index] = &customPageEntry{
-			Title: title,
-			File:  path.Join("pages", customPage.Name()),
+			Title:    headers.Title,
+			File:     path.Join("pages", customPage.Name()),
+			data:     data,
+			template: customPageTemplate,
+		}
+	}
+
+	for _, page := range customPages {
+		if err := writeTemplateToFile(page.template, page.data, output, page.File, minifyOutput); err != nil {
+			return fmt.Errorf("error writing custom page: %w", err)
 		}
 	}
 
@@ -133,7 +181,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 	}
 
 	if *verbose {
-		log.Println("Indexing and writing articles.")
+		log.Println("Indexing and writing articles ...")
 	}
 	indexedArticles := make([]*indexedArticle, 0, len(articles))
 	for _, article := range articles {
@@ -148,90 +196,59 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 		if err != nil {
 			return fmt.Errorf("couldn't clone article template: %w", err)
 		}
+
 		sourcePath := filepath.Join(sourceFolder, "articles", article.Name())
-		specificArticleTemplate, err := newArticleSkeleton.ParseFiles(sourcePath)
+		headers, rawContent, err := parsePage(sourcePath)
 		if err != nil {
-			return fmt.Errorf("couldn't parse article '%s': %w", article, err)
+			return fmt.Errorf("error parsing article '%s': %w", article.Name(), err)
+		}
+
+		specificArticleTemplate, err := newArticleSkeleton.Parse(`{{define "content"}}` + rawContent + `{{end}}`)
+		if err != nil {
+			return fmt.Errorf("couldn't parse article '%s': %w", article.Name(), err)
 		}
 		articleData := &articlePageData{
 			pageConfig:  loadedPageConfig,
 			CustomPages: customPages,
 		}
 
-		articleData.Description, err = templateToOptionalString(specificArticleTemplate.Lookup("description"))
-		if err != nil {
-			return err
+		articleData.Title = headers.Title
+		articleData.Description = headers.Description
+		for tagIndex, tag := range headers.Tags {
+			headers.Tags[tagIndex] = strings.ToLower(strings.TrimSpace(tag))
 		}
-		tagString, err := templateToOptionalString(specificArticleTemplate.Lookup("tags"))
-		if err != nil {
-			return err
-		}
-		tagString = strings.TrimSpace(tagString)
-		var tags []string
-		//Tags are optional
-		if tagString != "" {
-			tags = strings.Split(tagString, ",")
-			for tagIndex, tag := range tags {
-				tags[tagIndex] = strings.ToLower(strings.TrimSpace(tag))
-			}
-			sort.Slice(tags, func(a, b int) bool {
-				return strings.Compare(tags[a], tags[b]) == -1
-			})
-		}
-		articleData.Tags = tags
-		dateAsString, err := templateToString(specificArticleTemplate.Lookup("date"))
-		if err != nil {
-			return err
-		}
-		publishTime, err := time.Parse("2006-01-02", dateAsString)
-		if err != nil {
-			return fmt.Errorf("couldn't parse date '%s': %w", dateAsString, err)
-		}
-		articleData.RFC3339Time = publishTime.Format(time.RFC3339)
-		articleData.HumanTime = publishTime.Format(loadedPageConfig.DateFormat)
-		articleData.PodcastAudio, err = templateToOptionalString(specificArticleTemplate.Lookup("podcast-audio"))
-		if err != nil {
-			return err
-		}
-		if articleData.PodcastAudio != "" {
-			if strings.HasPrefix(strings.TrimPrefix(articleData.PodcastAudio, "/"), "media") {
-				articleData.PodcastAudio = path.Join(loadedPageConfig.BasePath, articleData.PodcastAudio)
+		sort.Slice(headers.Tags, func(a, b int) bool {
+			return strings.Compare(headers.Tags[a], headers.Tags[b]) == -1
+		})
+		articleData.Tags = headers.Tags
+
+		articleData.RFC3339Time = headers.dateParsed.Format(time.RFC3339)
+		articleData.HumanTime = headers.dateParsed.Format(loadedPageConfig.DateFormat)
+		if headers.PodcastAudio != "" {
+			if strings.HasPrefix(strings.TrimPrefix(headers.PodcastAudio, "/"), "media") {
+				articleData.PodcastAudio = path.Join(loadedPageConfig.BasePath, headers.PodcastAudio)
 			}
 		}
 		articleTargetPath := filepath.Join("articles", article.Name())
 
-		title, err := templateToString(specificArticleTemplate.Lookup("title"))
-		if err != nil {
-			return err
-		}
 		content, err := templateToString(specificArticleTemplate.Lookup("content"))
 		if err != nil {
 			return err
 		}
-		author, err := templateToOptionalString(specificArticleTemplate.Lookup("author"))
-		if err != nil {
-			return err
-		}
-		author = strings.TrimSpace(author)
-		authorEmail, err := templateToOptionalString(specificArticleTemplate.Lookup("author-email"))
-		if err != nil {
-			return err
-		}
-		authorEmail = strings.TrimSpace(authorEmail)
 
 		newIndexedArticle := &indexedArticle{
 			pageConfig:   loadedPageConfig,
 			podcastAudio: articleData.PodcastAudio,
-			Title:        title,
+			Title:        headers.Title,
 			File:         path.Join("articles", article.Name()),
-			RFC3339Time:  publishTime,
-			HumanTime:    publishTime.Format(loadedPageConfig.DateFormat),
+			RFC3339Time:  headers.dateParsed,
+			HumanTime:    articleData.HumanTime,
 			Content:      content,
-			Tags:         tags,
-			AuthorName:   author,
-			AuthorEmail:  authorEmail,
+			Tags:         headers.Tags,
+			AuthorName:   headers.Author,
+			AuthorEmail:  headers.AuthorEmail,
 		}
-		//Fix page metadata to include correct name instead of main author.
+		// Fix page metadata to include correct name instead of main author.
 		if newIndexedArticle.AuthorName != "" {
 			newIndexedArticle.Author = newIndexedArticle.AuthorName
 			articleData.Author = newIndexedArticle.AuthorName
@@ -244,14 +261,14 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 		}
 	}
 
-	//Sort articles to make sure the RSS feed and index have the right ordering.
+	// Sort articles to make sure the RSS feed and index have the right ordering.
 	sort.Slice(indexedArticles, func(a, b int) bool {
 		articleA := indexedArticles[a]
 		articleB := indexedArticles[b]
 		return articleB.RFC3339Time.Before(articleA.RFC3339Time)
 	})
 
-	//Collect tags from all articles for listing them in the index files.
+	// Collect tags from all articles for listing them in the index files.
 	var tags []string
 	for _, article := range indexedArticles {
 	NEW_TAG_LOOP:
@@ -265,30 +282,19 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 			tags = append(tags, tag)
 		}
 	}
-
-	if *verbose {
-		log.Println("Writing custom pages.")
-	}
-	//We first populate the custom page array so that the pages all have a correct menu header.
-	for fileName, customPageTemplate := range customPageTemplates {
-		writeTemplateToFile(customPageTemplate, &customPageData{
-			pageConfig:  loadedPageConfig,
-			CustomPages: customPages,
-		}, output, filepath.Join("pages", fileName), minifyOutput)
-	}
-
-	indexTemplate := parsedTemplates.Lookup("index")
+	slices.Sort(tags)
 
 	if *verbose {
 		log.Println("Writing main index files.")
 	}
+	indexTemplate := parsedTemplates.Lookup("index")
 	writeIndexFiles(indexTemplate, indexedArticles, customPages, loadedPageConfig,
 		tags, "", "index.html", "index-%d.html", output, minifyOutput)
 
 	if *verbose {
 		log.Println("Writing tagged index files.")
 	}
-	//Special Index-Files with tag-filters
+	// Special Index-Files with tag-filters
 	for _, tag := range tags {
 		var tagFilteredArticles []*indexedArticle
 	ARTICLE_LOOP:
@@ -357,6 +363,33 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 	}, output, "404.html", minifyOutput)
 }
 
+func parsePage(sourcePath string) (ArticleHeaders, string, error) {
+	var headers ArticleHeaders
+	sourceFile, err := os.Open(sourcePath)
+	if err != nil {
+		return headers, "", fmt.Errorf("error opening article: %w", err)
+	}
+
+	articleBytes, err := io.ReadAll(sourceFile)
+	if err != nil {
+		return headers, "", fmt.Errorf("error reading article: %w", err)
+	}
+	defer sourceFile.Close()
+
+	parts := bytes.SplitN(articleBytes, []byte("\n---\n"), 2)
+	if len(parts) < 2 {
+		return headers, "", errors.New("header missing, separate with `\n---\n`")
+	}
+
+	if err := yaml.Unmarshal(parts[0], &headers); err != nil {
+		return headers, "", fmt.Errorf("error reading headers: %w", err)
+	}
+	if err := headers.Parse(); err != nil {
+		return headers, "", fmt.Errorf("error parsing headers: %w", err)
+	}
+	return headers, string(parts[1]), nil
+}
+
 // cleanup deletes previously generated files.
 func cleanup(output string) error {
 	if *verbose {
@@ -398,8 +431,8 @@ func writeIndexFiles(
 	firstIndexName string,
 	indexNameTemplate string,
 	outputFolder string,
-	minifyOutput bool) error {
-
+	minifyOutput bool,
+) error {
 	currentPageNumber := 1
 	lastPageNumber := len(indexedArticles) / loadedPageConfig.MaxIndexEntries
 	if len(indexedArticles)%loadedPageConfig.MaxIndexEntries != 0 {
@@ -543,7 +576,9 @@ func joinURLParts(partOne, partTwo string) (string, error) {
 }
 
 type pageConfig struct {
-	BasePath            string
+	BasePath string
+	// Title is the page titel, which differs from the SiteName.
+	Title               string
 	SiteName            string
 	Author              string
 	URL                 string
@@ -558,39 +593,41 @@ type pageConfig struct {
 }
 
 type customPageEntry struct {
-	Title string
-	File  string
+	Title    string
+	File     string
+	data     *customPageData
+	template *template.Template
 }
 
 type articlePageData struct {
 	pageConfig
-	//Time article was published in RFC3339 format.
+	// Time article was published in RFC3339 format.
 	RFC3339Time string
-	//HumanTime is a human readable time format.
+	// HumanTime is a human readable time format.
 	HumanTime string
-	//PodcastAudio file link
+	// PodcastAudio file link
 	PodcastAudio string
-	//Tags for metadata
+	// Tags for metadata
 	Tags []string
-	//CustomPages are pages listed in the header next to "Home"
+	// CustomPages are pages listed in the header next to "Home"
 	CustomPages []*customPageEntry
 }
 
 type customPageData struct {
 	pageConfig
-	//CustomPages are pages listed in the header next to "Home"
+	// CustomPages are pages listed in the header next to "Home"
 	CustomPages []*customPageEntry
 }
 
 type indexData struct {
 	pageConfig
-	//Tags are all available tags used accross all posts
+	// Tags are all available tags used accross all posts
 	Tags []string
-	//FilterTag that is currently filtered for
+	// FilterTag that is currently filtered for
 	FilterTag string
-	//CustomPages are pages listed in the header next to "Home"
+	// CustomPages are pages listed in the header next to "Home"
 	CustomPages []*customPageEntry
-	//IndexedArticles are the articles to display.
+	// IndexedArticles are the articles to display.
 	IndexedArticles []*indexedArticle
 
 	PageNameTemplate string
