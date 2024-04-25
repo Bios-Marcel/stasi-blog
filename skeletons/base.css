@@ -80,6 +80,11 @@ nav>a {
     margin-bottom: 1em;
 }
 
+.articles>div>a {
+    font-size: 1.75em;
+    font-weight: bold;
+}
+
 .articles h2 {
     margin: 0;
 }
@@ -121,12 +126,66 @@ nav>a {
 }
 
 /* CONTENT */
+h1+*,
+.authoring-info+* {
+    margin-top: 1rem;
+}
+
 .authoring-info {
     font-size: 0.8em;
-    margin-top: 0;
-    margin-bottom: 2rem;
     font-weight: bold;
     font-style: italic;
+    margin-top: 0;
+}
+
+.article-h1 {
+    margin-bottom: 0;
+}
+
+h1 {
+    font-size: 1.75em;
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+h2 {
+    font-size: 1.5em;
+}
+
+h3 {
+    font-size: 1.25em;
+}
+
+h4 {
+    font-size: 1.125em;
+}
+
+h5 {
+    font-size: 1.0625em;
+}
+
+h6 {
+    font-size: 1em;
+}
+
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin-bottom: 0.5rem;
+}
+
+h2+p,
+h3+p,
+h4+p,
+h5+p,
+h6+p {
+    margin-top: 0;
+}
+
+.h-a {
+    padding-left: 8px;
 }
 
 figure {
@@ -140,14 +199,6 @@ figcaption {
 article {
     display: inline-block;
     width: 100%;
-}
-
-.h-a {
-    padding-left: 8px;
-}
-
-article>h1 {
-    margin: 0;
 }
 
 table {

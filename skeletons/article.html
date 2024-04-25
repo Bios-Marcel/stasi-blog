@@ -18,10 +18,10 @@
                 {{template "header" .}}
         </header>
         <article>
-                <h1>{{.Title}}</h1>
-                <p class="authoring-info">Written on {{.HumanTime}}{{if .Author}} by {{.Author}}{{end}}</p>{{if
-                .PodcastAudio}}
-                <audio controls>
+                <h1 class="article-h1">{{.Title}}</h1>
+                <span class="authoring-info">Written on {{.HumanTime}}{{if
+                        .Author}} by {{.Author}}{{end}}</span>
+                {{if .PodcastAudio}}<audio controls>
                         <source src="{{.PodcastAudio}}" type="audio/mp3">
                         Your browser is unable to play this audio.
                 </audio>{{end}}

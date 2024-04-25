@@ -17,9 +17,7 @@
         <div class="index-content">
                 <div class="articles">{{range .IndexedArticles}}
                         <div>
-                                <a href="{{.BasePath}}/{{.File}}">
-                                        <h2>{{.Title}}</h2>
-                                </a>
+                                <a href="{{.BasePath}}/{{.File}}">{{.Title}}</a>
                                 <br />
                                 <i>{{.HumanTime}}</i>
                                 {{if .Tags}}
