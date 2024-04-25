@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -22,6 +23,7 @@ import (
 	"github.com/Bios-Marcel/feeds"
 	"github.com/goccy/go-yaml"
 	"github.com/otiai10/copy"
+	"golang.org/x/net/html"
 )
 
 //go:embed skeletons/*
@@ -151,7 +153,12 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 			return fmt.Errorf("error parsing page '%s': %w", customPage.Name(), err)
 		}
 
-		customPageTemplate, err := customPageSkeletonClone.Parse(`{{define "content"}}` + rawContent + `{{end}}`)
+		rawContent, err = transformPage(rawContent, false)
+		if err != nil {
+			return fmt.Errorf("error transforming page: %w", err)
+		}
+
+		customPageTemplate, err := customPageSkeletonClone.Parse(`{{define "content"}}` + string(rawContent) + `{{end}}`)
 		if err != nil {
 			return fmt.Errorf("couldn't parse custom page '%s': %w", customPage.Name(), err)
 		}
@@ -203,7 +210,14 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 			return fmt.Errorf("error parsing article '%s': %w", article.Name(), err)
 		}
 
-		specificArticleTemplate, err := newArticleSkeleton.Parse(`{{define "content"}}` + rawContent + `{{end}}`)
+		transformedContent, err := transformPage([]byte(rawContent), false)
+		if err != nil {
+			return fmt.Errorf("error transforming article: %w", err)
+		}
+
+		specificArticleTemplate, err := newArticleSkeleton.Parse(
+			`{{define "content"}}` + string(transformedContent) + `{{end}}`,
+		)
 		if err != nil {
 			return fmt.Errorf("couldn't parse article '%s': %w", article.Name(), err)
 		}
@@ -231,9 +245,11 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 		}
 		articleTargetPath := filepath.Join("articles", article.Name())
 
-		content, err := templateToString(specificArticleTemplate.Lookup("content"))
+		// For feeds, we don't want certain elements, as they cause issues with
+		// feed readers.
+		feedContent, err := transformPage(rawContent, true)
 		if err != nil {
-			return err
+			return fmt.Errorf("error transforming content for feed: %w", err)
 		}
 
 		newIndexedArticle := &indexedArticle{
@@ -243,7 +259,7 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 			File:         path.Join("articles", article.Name()),
 			RFC3339Time:  headers.dateParsed,
 			HumanTime:    articleData.HumanTime,
-			Content:      content,
+			FeedContent:  string(feedContent),
 			Tags:         headers.Tags,
 			AuthorName:   headers.Author,
 			AuthorEmail:  headers.AuthorEmail,
@@ -363,31 +379,105 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 	}, output, "404.html", minifyOutput)
 }
 
-func parsePage(sourcePath string) (ArticleHeaders, string, error) {
+func parsePage(sourcePath string) (ArticleHeaders, []byte, error) {
 	var headers ArticleHeaders
 	sourceFile, err := os.Open(sourcePath)
 	if err != nil {
-		return headers, "", fmt.Errorf("error opening article: %w", err)
+		return headers, nil, fmt.Errorf("error opening article: %w", err)
 	}
 
 	articleBytes, err := io.ReadAll(sourceFile)
 	if err != nil {
-		return headers, "", fmt.Errorf("error reading article: %w", err)
+		return headers, nil, fmt.Errorf("error reading article: %w", err)
 	}
 	defer sourceFile.Close()
 
 	parts := bytes.SplitN(articleBytes, []byte("\n---\n"), 2)
 	if len(parts) < 2 {
-		return headers, "", errors.New("header missing, separate with `\n---\n`")
+		return headers, nil, errors.New("header missing, separate with `\n---\n`")
 	}
 
 	if err := yaml.Unmarshal(parts[0], &headers); err != nil {
-		return headers, "", fmt.Errorf("error reading headers: %w", err)
+		return headers, nil, fmt.Errorf("error reading headers: %w", err)
 	}
 	if err := headers.Parse(); err != nil {
-		return headers, "", fmt.Errorf("error parsing headers: %w", err)
+		return headers, nil, fmt.Errorf("error parsing headers: %w", err)
 	}
-	return headers, string(parts[1]), nil
+	return headers, parts[1], nil
+}
+
+func transformPage(post []byte, feed bool) ([]byte, error) {
+	reader := bytes.NewReader(post)
+	writer := bytes.NewBuffer(make([]byte, 0, len(post)+1048))
+	tokenizer := html.NewTokenizer(reader)
+	handleErr := func() ([]byte, error) {
+		err := tokenizer.Err()
+		if errors.Is(err, io.EOF) {
+			return writer.Bytes(), nil
+		}
+		return nil, err
+	}
+	for {
+		tokenType := tokenizer.Next()
+		if tokenType == html.ErrorToken {
+			return handleErr()
+		}
+
+		token := tokenizer.Token()
+		if token.Type == html.StartTagToken && !feed {
+			switch token.Data {
+			case "h2", "h3", "h4", "h5", "h6":
+				if err := transformHeading(tokenizer, token, writer); err != nil {
+					return handleErr()
+				}
+				continue
+			}
+		}
+
+		writer.WriteString(token.String())
+	}
+}
+
+var (
+	idCharsToRemove  = regexp.MustCompile("[^a-z0-9 ]")
+	idCharsToReplace = regexp.MustCompile("[ ]")
+)
+
+func convertToElementId(text string) string {
+	id := strings.ToLower(text)
+	id = idCharsToRemove.ReplaceAllLiteralString(id, "")
+	id = idCharsToReplace.ReplaceAllLiteralString(id, "_")
+	return id
+}
+
+func transformHeading(tokenizer *html.Tokenizer, headingOpen html.Token, writer *bytes.Buffer) error {
+	var lastText string
+	for {
+		tokenType := tokenizer.Next()
+		if tokenType == html.ErrorToken {
+			return tokenizer.Err()
+		}
+
+		// FIXME This won't correctly handle complex nested headers.
+		token := tokenizer.Token()
+		if tokenType == html.TextToken {
+			lastText = token.String()
+		} else if tokenType == html.EndTagToken {
+			if lastText != "" {
+				id := convertToElementId(lastText)
+				headingOpen.Attr = append(headingOpen.Attr, html.Attribute{Key: "id", Val: id})
+				writer.WriteString(headingOpen.String())
+				writer.WriteString(lastText)
+				writer.WriteString(fmt.Sprintf(`<a class="h-a" href="#%s">#</a>`, id))
+				lastText = ""
+			}
+
+			writer.WriteString(token.String())
+			return nil
+		} else {
+			writer.WriteString(token.String())
+		}
+	}
 }
 
 // cleanup deletes previously generated files.
@@ -501,7 +591,7 @@ func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle,
 		newFeedItem := &feeds.Item{
 			Title:       article.Title,
 			Author:      mainAuthor,
-			Content:     article.Content,
+			Content:     article.FeedContent,
 			Description: article.Description,
 			Created:     article.RFC3339Time,
 		}
@@ -665,6 +755,6 @@ type indexedArticle struct {
 	RFC3339Time  time.Time
 	podcastAudio string
 	HumanTime    string
-	Content      string
+	FeedContent  string
 	Tags         []string
 }

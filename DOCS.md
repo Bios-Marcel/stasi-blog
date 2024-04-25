@@ -189,6 +189,15 @@ the `trh-table` style class. An example would be:
 
 ## Best practices
 
+### Headings
+
+For headings, you should use standard HTML tags `h1` to `h6`. Note, that each
+page, whether article or custom page, will automatically render the page title
+as an `h1` heading. Therefore all content headings should be `h2` or smaller.
+
+If you use headings in your HTML, they will automatically be augmented with an
+anchor (`a`) to allow jumping directly to a heading.
+
 ### Image loading
 
 If you want to add images to your posts, try loading them lazily, as it

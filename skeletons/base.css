@@ -28,13 +28,16 @@ body {
     width: min(50rem, 90%);
 }
 
-a, a > * {
+a,
+a>* {
     color: var(--anchor);
     text-decoration: none;
     width: fit-content;
     display: inline;
 }
-a:hover, a:hover > * {
+
+a:hover,
+a:hover>* {
     text-decoration: underline;
 }
 
@@ -59,7 +62,7 @@ nav {
     margin: auto 0;
 }
 
-nav > a {
+nav>a {
     white-space: nowrap;
 }
 
@@ -73,9 +76,10 @@ nav > a {
     display: block;
 }
 
-.articles > div {
+.articles>div {
     margin-bottom: 1em;
 }
+
 .articles h2 {
     margin: 0;
 }
@@ -83,11 +87,13 @@ nav > a {
 .article-tags {
     display: inline-block;
 }
+
 .article-tags::before {
     content: " - ";
     white-space: pre;
 }
-.article-tags > *:not(:first-child)::before {
+
+.article-tags>*:not(:first-child)::before {
     content: ", ";
 }
 
@@ -102,7 +108,7 @@ nav > a {
     margin-bottom: 0.3em;
 }
 
-.tags > div {
+.tags>div {
     display: flex;
     flex-direction: column;
     align-items: end;
@@ -135,7 +141,12 @@ article {
     display: inline-block;
     width: 100%;
 }
-article > h1 {
+
+.h-a {
+    padding-left: 8px;
+}
+
+article>h1 {
     margin: 0;
 }
 
@@ -195,7 +206,7 @@ code>pre {
         padding: 0.2em 0.5em;
     }
 
-    nav > a {
+    nav>a {
         font-size: 1.5em;
     }
 
@@ -210,7 +221,9 @@ code>pre {
 
 /* ADJUSTMENTS FOR BROWSER BUILTIN PRINT FUNCTION */
 @media print {
-    header {
+
+    header,
+    .h-a {
         display: none;
     }
 
