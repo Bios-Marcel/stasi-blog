@@ -3,7 +3,6 @@
         <a href="{{.BasePath}}/">{{.SiteName}}</a>
 </div>
 <nav>{{$BasePath := .BasePath}}
-        <a href="{{.BasePath}}/">Home</a>
         <a href="{{.BasePath}}/feed.xml" download>RSS-Feed</a>
         {{range .CustomPages}}<a href="{{$BasePath}}/{{.File}}">{{.Title}}</a>{{end}}
 </nav>{{end}}

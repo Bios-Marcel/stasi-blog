@@ -699,13 +699,15 @@ type articlePageData struct {
 	PodcastAudio string
 	// Tags for metadata
 	Tags []string
-	// CustomPages are pages listed in the header next to "Home"
+	// CustomPages are listed right of the default pages in the site navbar /
+	// header.
 	CustomPages []*customPageEntry
 }
 
 type customPageData struct {
 	pageConfig
-	// CustomPages are pages listed in the header next to "Home"
+	// CustomPages are listed right of the default pages in the site navbar /
+	// header.
 	CustomPages []*customPageEntry
 }
 
@@ -715,7 +717,8 @@ type indexData struct {
 	Tags []string
 	// FilterTag that is currently filtered for
 	FilterTag string
-	// CustomPages are pages listed in the header next to "Home"
+	// CustomPages are listed right of the default pages in the site navbar /
+	// header.
 	CustomPages []*customPageEntry
 	// IndexedArticles are the articles to display.
 	IndexedArticles []*indexedArticle
