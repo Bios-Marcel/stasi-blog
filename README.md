@@ -17,7 +17,7 @@ If you don't want to use one of the release versions from the release section
 or there's no binary for your platform, you can easily build the project
 yourself.
 
-All you need is a terminal and [Golang 1.21 or later](https://golang.org/dl/).
+All you need is a terminal and [Golang 1.22 or later](https://golang.org/dl/).
 
 ## Installation via go
 

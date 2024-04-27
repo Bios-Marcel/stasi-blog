@@ -1,9 +1,11 @@
 module github.com/Bios-Marcel/stasi-blog
 
-go 1.21
+go 1.22
+
+toolchain go1.22.2
 
 require (
-	github.com/Bios-Marcel/feeds v1.1.2
+	github.com/Bios-Marcel/feeds v1.1.3
 	github.com/bep/debounce v1.2.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/goccy/go-yaml v1.11.3
