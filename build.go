@@ -407,6 +407,9 @@ func parsePage(sourcePath string) (ArticleHeaders, []byte, error) {
 	}
 	defer sourceFile.Close()
 
+	// Prevent follow-up errors on windows.
+	articleBytes = bytes.ReplaceAll(articleBytes, []byte("\r\n"), []byte("\n"))
+
 	parts := bytes.SplitN(articleBytes, []byte("\n---\n"), 2)
 	if len(parts) < 2 {
 		return headers, nil, errors.New("header missing, separate with `\n---\n`")
