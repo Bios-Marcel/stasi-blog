@@ -35,6 +35,7 @@ type ArticleHeaders struct {
 	Date        string `yaml:"date"`
 	dateParsed  time.Time
 	Tags        []string `yaml:"tags"`
+	Draft       bool     `yaml:"draft"`
 
 	Author      string `yaml:"author"`
 	AuthorEmail string `yaml:"author-email"`
@@ -56,7 +57,7 @@ func (headers *ArticleHeaders) Parse() error {
 	return errors.Join(errs...)
 }
 
-func build(sourceFolder, output, config string, minifyOutput bool) error {
+func build(sourceFolder, output, config string, minifyOutput, draft bool) error {
 	if err := cleanup(output); err != nil {
 		return fmt.Errorf("error performing cleanup: %w", err)
 	}
@@ -153,6 +154,13 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 			return fmt.Errorf("error parsing page '%s': %w", customPage.Name(), err)
 		}
 
+		if !draft && headers.Draft {
+			if *verbose {
+				fmt.Printf("Skipping page draft '%s'\n", customPage.Name())
+			}
+			continue
+		}
+
 		rawContent, err = transformPage(rawContent, false)
 		if err != nil {
 			return fmt.Errorf("error transforming page: %w", err)
@@ -208,6 +216,13 @@ func build(sourceFolder, output, config string, minifyOutput bool) error {
 		headers, rawContent, err := parsePage(sourcePath)
 		if err != nil {
 			return fmt.Errorf("error parsing article '%s': %w", article.Name(), err)
+		}
+
+		if !draft && headers.Draft {
+			if *verbose {
+				fmt.Printf("Skipping article draft '%s'\n", article.Name())
+			}
+			continue
 		}
 
 		transformedContent, err := transformPage([]byte(rawContent), false)

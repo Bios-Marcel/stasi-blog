@@ -25,11 +25,12 @@ func generateLiveCmd() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 	}
 	minifyOutput := buildCmd.Flags().BoolP("minify", "m", false, "Decides whether css and html files will be minified (reduces file size).")
+	draft := buildCmd.Flags().BoolP("draft", "d", true, "Decides whether draft files are included in the build output.")
 	config := buildCmd.Flags().StringP("config", "c", "", "Defines where the config is. If left empty, the config will be assumed in the source directory.")
 	basepath := buildCmd.Flags().StringP("basepath", "b", "", "Defines the path at which the directory is served. (For example /hello for http://localhost:8080/hello).")
 	port := buildCmd.Flags().IntP("port", "p", 8080, "Decides which port the HTTP server is run on.")
 	buildCmd.Run = func(cmd *cobra.Command, args []string) {
-		if err := live(args[0], *basepath, *config, *port, *minifyOutput); err != nil {
+		if err := live(args[0], *basepath, *config, *port, *minifyOutput, *draft); err != nil {
 			log.Println("Error serving files in dev mode:")
 			log.Println(err)
 		}
@@ -47,6 +48,7 @@ func generateBuildCmd() *cobra.Command {
 		Args:       cobra.ExactArgs(1),
 	}
 	minifyOutput := buildCmd.Flags().BoolP("minify", "m", false, "Decides whether css and html files will be minified (reduces file size).")
+	draft := buildCmd.Flags().BoolP("draft", "d", false, "Decides whether draft files are included in the build output.")
 	config := buildCmd.Flags().StringP("config", "c", "", "Defines where the config is. If left empty, the config will be assumed in the source directory.")
 	output := buildCmd.Flags().StringP("output", "o", "output", "Defines the directory where the build result will be written to.")
 	buildCmd.Run = func(cmd *cobra.Command, args []string) {
@@ -54,7 +56,7 @@ func generateBuildCmd() *cobra.Command {
 		if source == *output {
 			log.Println("Error: Source and output can't be the same.")
 		} else {
-			if err := build(source, *output, *config, *minifyOutput); err != nil {
+			if err := build(source, *output, *config, *minifyOutput, *draft); err != nil {
 				log.Println("Error during build:")
 				log.Println(err.Error())
 			}

@@ -10,11 +10,11 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func live(sourceFolder, basepath, config string, port int, minifiyOutput bool) error {
+func live(sourceFolder, basepath, config string, port int, minifiyOutput, draft bool) error {
 	// Initial build
 	target := "./.tmp"
 	build := func() error {
-		return build(sourceFolder, target, config, minifiyOutput)
+		return build(sourceFolder, target, config, minifiyOutput, draft)
 	}
 	if err := build(); err != nil {
 		// We don't return an error here, since the user can simply try
