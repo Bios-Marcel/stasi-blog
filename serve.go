@@ -8,11 +8,13 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/NYTimes/gziphandler"
 )
 
 func serve(directoryToServe, basepath string, port int) error {
-	//Example in my case.
-	//go run . --input="../blog-test-source" --output="../blog-test" & go run demo/server.go --dir="../blog-test" --basepath="/blog-test/"
+	// Example in my case.
+	// go run . --input="../blog-test-source" --output="../blog-test" & go run demo/server.go --dir="../blog-test" --basepath="/blog-test/"
 
 	go func() {
 		sc := make(chan os.Signal, 1)
@@ -26,12 +28,13 @@ func serve(directoryToServe, basepath string, port int) error {
 	portString := fmt.Sprintf("localhost:%d", port)
 
 	dir := dirWith404Handler{http.Dir(directoryToServe)}
+	handler := gziphandler.GzipHandler(http.FileServer(dir))
 	if basepath == "" {
-		return http.ListenAndServe(portString, http.FileServer(dir))
+		return http.ListenAndServe(portString, handler)
 	}
-	//Making sure there's not too many or too little slashes ;)
+	// Making sure there's not too many or too little slashes ;)
 	basepath = "/" + strings.Trim(basepath, "/\\") + "/"
-	http.Handle(basepath, http.StripPrefix(basepath, http.FileServer(dir)))
+	http.Handle(basepath, http.StripPrefix(basepath, handler))
 	return http.ListenAndServe(portString, nil)
 }
 
@@ -47,8 +50,8 @@ func (d dirWith404Handler) Open(name string) (http.File, error) {
 	file, err := d.dir.Open(name)
 	if os.IsNotExist(err) {
 		file404, err := d.dir.Open("404.html")
-		//Technically we'd need the old error to indicate 404 to the
-		//browser, but for demo/test purposes, this'll do.
+		// Technically we'd need the old error to indicate 404 to the
+		// browser, but for demo/test purposes, this'll do.
 		return file404, err
 	}
 	return file, err

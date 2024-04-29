@@ -6,6 +6,7 @@ toolchain go1.22.2
 
 require (
 	github.com/Bios-Marcel/feeds v1.1.3
+	github.com/NYTimes/gziphandler v1.1.1
 	github.com/bep/debounce v1.2.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/goccy/go-yaml v1.11.3
