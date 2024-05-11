@@ -188,6 +188,11 @@ h6+p {
     padding-left: 8px;
 }
 
+img {
+    max-width: 100%;
+    height: auto;
+}
+
 figure {
     margin: 0;
 }
