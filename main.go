@@ -9,6 +9,7 @@ import (
 var verbose = new(bool)
 
 func main() {
+	log.SetFlags(log.Flags() | log.Lmicroseconds)
 	rootCmd := cobra.Command{Use: "stasi-blog"}
 	rootCmd.PersistentFlags().BoolVarP(verbose, "verbose", "v", false, "Decides whether additional, potentially unnecessary extra information, is printed to the terminal.")
 	rootCmd.AddCommand(generateBuildCmd())

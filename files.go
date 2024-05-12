@@ -25,10 +25,15 @@ func init() {
 }
 
 func createFile(path string) (*os.File, error) {
-	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0400)
+	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o400)
 }
 
-func writeTemplateToFile(sourceTemplate *template.Template, data interface{}, outputFolder, path string, minifyOutput bool) error {
+func writeTemplateToFile(
+	sourceTemplate *template.Template,
+	data any,
+	outputFolder, path string,
+	minifyOutput bool,
+) error {
 	file, err := createFile(filepath.Join(outputFolder, path))
 	if err != nil {
 		return err
@@ -36,7 +41,7 @@ func writeTemplateToFile(sourceTemplate *template.Template, data interface{}, ou
 	defer file.Close()
 
 	if minifyOutput {
-		//minify.Writer sadly doesn't work, the files end up empty.
+		// minify.Writer sadly doesn't work, the files end up empty.
 		templateBuffer := &bytes.Buffer{}
 		if err := sourceTemplate.Execute(templateBuffer, data); err != nil {
 			return fmt.Errorf("error executing template '%s': %w", sourceTemplate.Name(), err)
@@ -75,7 +80,7 @@ func copyFileByPath(sourcePath, targetPath string) error {
 
 func createDirectories(paths ...string) error {
 	for _, path := range paths {
-		if err := os.MkdirAll(path, 0755); err != nil {
+		if err := os.MkdirAll(path, 0o755); err != nil {
 			return err
 		}
 	}

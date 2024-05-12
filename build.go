@@ -425,11 +425,17 @@ func parsePage(sourcePath string) (ArticleHeaders, []byte, error) {
 }
 
 func transformPage(post []byte, feed bool) ([]byte, error) {
+	// We don't want to transform any elements for the feed as of now, as
+	// these are things the RSS reader should do. We only provide content,
+	// not style.
+	if feed {
+		return post, nil
+	}
+
 	reader := bytes.NewReader(post)
 	writer := bytes.NewBuffer(make([]byte, 0, len(post)+1048))
 	tokenizer := html.NewTokenizer(reader)
-	handleErr := func() ([]byte, error) {
-		err := tokenizer.Err()
+	handleErr := func(err error) ([]byte, error) {
 		if errors.Is(err, io.EOF) {
 			return writer.Bytes(), nil
 		}
@@ -438,15 +444,34 @@ func transformPage(post []byte, feed bool) ([]byte, error) {
 	for {
 		tokenType := tokenizer.Next()
 		if tokenType == html.ErrorToken {
-			return handleErr()
+			return handleErr(tokenizer.Err())
 		}
 
 		token := tokenizer.Token()
-		if token.Type == html.StartTagToken && !feed {
+		if token.Type == html.StartTagToken {
 			switch token.Data {
 			case "h2", "h3", "h4", "h5", "h6":
 				if err := transformHeading(tokenizer, token, writer); err != nil {
-					return handleErr()
+					return handleErr(err)
+				}
+				continue
+			case "img":
+				if err := transformImage(token, writer); err != nil {
+					return handleErr(err)
+				}
+				continue
+			}
+		}
+
+		// Some tags are self-closing, such as "img". Meaning it doesn't matter
+		// whether you put "<img>" or "</img>". However, the tokenizer will
+		// still output a different token type, as the parsing isn't semantic,
+		// so we treat both types, as browsers are lenient.
+		if token.Type == html.SelfClosingTagToken {
+			switch token.Data {
+			case "img":
+				if err := transformImage(token, writer); err != nil {
+					return handleErr(err)
 				}
 				continue
 			}
@@ -468,16 +493,53 @@ func convertToElementId(text string) string {
 	return id
 }
 
+func next(tokenizer *html.Tokenizer) (html.TokenType, html.Token, error) {
+	tokenType := tokenizer.Next()
+	token := tokenizer.Token()
+	if tokenType == html.ErrorToken {
+		return tokenType, token, tokenizer.Err()
+	}
+	return tokenType, token, nil
+}
+
+func attr(token html.Token, key string) (string, bool) {
+	for _, attr := range token.Attr {
+		if attr.Key == key {
+			return attr.Val, true
+		}
+	}
+	return "", false
+}
+
+func transformImage(imageToken html.Token, writer *bytes.Buffer) error {
+	_, hasWidth := attr(imageToken, "width")
+	_, hasHeight := attr(imageToken, "height")
+
+	loading, _ := attr(imageToken, "loading")
+	if loading == "lazy" {
+		if !hasWidth || !hasHeight {
+			return fmt.Errorf("image tag '%s' is set to load lazy, but doesn't have a width and height", imageToken.String())
+		}
+	}
+
+	// If width and height are available, we default to lazy loading, if eager
+	// isn't defined explicitly.
+	if loading == "" && hasWidth && hasHeight {
+		imageToken.Attr = append(imageToken.Attr, html.Attribute{Key: "loading", Val: "lazy"})
+	}
+
+	writer.WriteString(imageToken.String())
+	return nil
+}
+
 func transformHeading(tokenizer *html.Tokenizer, headingOpen html.Token, writer *bytes.Buffer) error {
 	var lastText string
 	for {
-		tokenType := tokenizer.Next()
-		if tokenType == html.ErrorToken {
-			return tokenizer.Err()
+		tokenType, token, err := next(tokenizer)
+		if err != nil {
+			return err
 		}
 
-		// FIXME This won't correctly handle complex nested headers.
-		token := tokenizer.Token()
 		if tokenType == html.TextToken {
 			lastText = token.String()
 		} else if tokenType == html.EndTagToken {
