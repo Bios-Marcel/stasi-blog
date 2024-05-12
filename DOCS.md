@@ -198,7 +198,20 @@ as an `h1` heading. Therefore all content headings should be `h2` or smaller.
 If you use headings in your HTML, they will automatically be augmented with an
 anchor (`a`) to allow jumping directly to a heading.
 
-### Image loading
+### Images
+
+#### Formats
+
+Depending on what the usecase is, you should use the correct image format.
+
+A good default choice is `webp` for images. It has very good lossless
+compression and also offers lossy compression in scenarios where it isn't very
+important to have maximum quality.
+
+You should also avoid formats such as `gif` and instead use `webm` where
+possible.
+
+#### Lazy Loading
 
 If you want to add images to your posts, try loading them lazily, as it
 allows your readers to get a readable page faster. Especially on mobile
@@ -207,11 +220,17 @@ can really help.
 
 To lazily load an image, you need the `loading="lazy"` attribute.
 
+One thing to keep in mind though, is that you need a default `width` and
+`height`, as this will prevent layout shifting.
+
 An example could look like this:
 
 ```html
-<img src="/images/postA/house.png" loading="lazy" alt="My new house"/>
+<img src="/images/postA/house.png" width="500" height="500" loading="lazy" alt="My new house"/>
 ```
+
+If you don't specify `lazy` as the loading strategy, but `width` and `height`
+are presented, the image is automatically loaded lazily.
 
 ### Avoid unnecessary load
 
