@@ -10,7 +10,7 @@
 {{define "base-header"}}
 <link rel="stylesheet" type="text/css" href="{{.BasePath}}/base.css">
 {{/* Avoids favicon request or adds favicon */}}
-<link rel="icon" href="{{if .UseFavicon}}{{.BasePath}}/favicon.ico{{else}}data:,{{end}}" />{{end}}
+<link rel="icon" href="{{if .Favicon}}{{.BasePath}}/{{.Favicon}}{{else}}data:,{{end}}" />{{end}}
 
 {{define "base-metadata"}}
 <meta charset="UTF-8" />

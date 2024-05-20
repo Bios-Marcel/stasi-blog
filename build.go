@@ -78,7 +78,6 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 
 	loadedPageConfig := pageConfig{
 		DateFormat:      "2 January 2006",
-		UseFavicon:      true,
 		MaxIndexEntries: 10,
 	}
 	var configPath string
@@ -100,23 +99,16 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 		loadedPageConfig.BasePath = "/" + strings.Trim(loadedPageConfig.BasePath, `/\`)
 	}
 
-	if loadedPageConfig.UseFavicon {
-		// .ico is preferred, as it has multi resolution support.
-		if err := copyFileByPath(
-			filepath.Join(sourceFolder, "favicon.ico"),
-			filepath.Join(output, "favicon.ico")); err != nil {
-			if !os.IsNotExist(err) {
-				log.Println("error copying favicon.ico:", err)
-			}
-			if err := copyFileByPath(
-				filepath.Join(sourceFolder, "favicon.png"),
-				filepath.Join(output, "favicon.png")); err != nil {
-				if !os.IsNotExist(err) {
-					return fmt.Errorf("error copying favicon.ico: %w", err)
-				} else {
-					return fmt.Errorf("favicon.ico/png couldn't be found. If you don't want to use a favicon, set 'UseFavicon' to 'false'")
-				}
-			}
+	loadedPageConfig.Favicon, err = copyFavicon(sourceFolder, output)
+	if err != nil {
+		return fmt.Errorf("error copying favicon: %w", err)
+	}
+
+	if *verbose {
+		if loadedPageConfig.Favicon == "" {
+			log.Println("Warning: Neither 'favicon.ico' nor 'favicon.png' were found, is this intentional?")
+		} else {
+			log.Printf("Using favicon '%s'.\n", loadedPageConfig.Favicon)
 		}
 	}
 
@@ -402,6 +394,37 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 		pageConfig:  loadedPageConfig,
 		CustomPages: customPages,
 	}, output, "404.html", minifyOutput)
+}
+
+func copyFavicon(sourceFolder, output string) (string, error) {
+	// .ico is preferred, as it has multi resolution support.
+	err := copyFileByPath(
+		filepath.Join(sourceFolder, "favicon.ico"),
+		filepath.Join(output, "favicon.ico"))
+	if err == nil {
+		return "favicon.ico", nil
+	}
+
+	// If we encounter any error, aside from non-existence, we early
+	// exit, as trying the other format doesn't make sense.
+	if !os.IsNotExist(err) {
+		return "favicon.ico", fmt.Errorf("error copying favicon.ico: %w", err)
+	}
+
+	// Doesn't exist, fallthrough to png.
+
+	err = copyFileByPath(
+		filepath.Join(sourceFolder, "favicon.png"),
+		filepath.Join(output, "favicon.png"))
+	if err == nil {
+		return "favicon.png", nil
+	}
+
+	if !os.IsNotExist(err) {
+		return "favicon.png", fmt.Errorf("error copying favicon.png: %w", err)
+	}
+
+	return "", nil
 }
 
 func parsePage(sourcePath string) (ArticleHeaders, []byte, error) {
@@ -772,7 +795,7 @@ type pageConfig struct {
 	UtterancesRepo      string
 	MaxIndexEntries     int
 	AddOptionalMetaData bool
-	UseFavicon          bool
+	Favicon             string
 }
 
 type customPageEntry struct {
