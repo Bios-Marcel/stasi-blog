@@ -4,7 +4,7 @@
 </div>
 <nav>{{$BasePath := .BasePath}}
         <a href="{{.BasePath}}/feed.xml" download>RSS-Feed</a>
-        {{range .CustomPages}}<a href="{{$BasePath}}/{{.File}}">{{.Title}}</a>{{end}}
+        {{range .CustomPages}}{{if not .Hidden}}<a href="{{$BasePath}}/{{.File}}">{{.Title}}</a>{{end}}{{end}}
 </nav>{{end}}
 
 {{define "base-header"}}

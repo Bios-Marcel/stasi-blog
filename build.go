@@ -35,7 +35,11 @@ type ArticleHeaders struct {
 	Date        string `yaml:"date"`
 	dateParsed  time.Time
 	Tags        []string `yaml:"tags"`
-	Draft       bool     `yaml:"draft"`
+	// Draft will prevent inclusion of the given page in a non-draft build.
+	Draft bool `yaml:"draft"`
+	// Hidden will not show any links to the given page. This works for both
+	// custom pages and articles.
+	Hidden bool `yaml:"hidden"`
 
 	Author      string `yaml:"author"`
 	AuthorEmail string `yaml:"author-email"`
@@ -175,10 +179,13 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 			pageConfig:  loadedPageConfig,
 			CustomPages: customPages,
 		}
+		data.Hidden = headers.Hidden
 		data.Title = headers.Title
+		file := path.Join("pages", customPage.Name())
 		customPages[index] = &customPageEntry{
 			Title:    headers.Title,
-			File:     path.Join("pages", customPage.Name()),
+			Hidden:   headers.Hidden,
+			File:     file,
 			data:     data,
 			template: customPageTemplate,
 		}
@@ -241,6 +248,7 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 			CustomPages: customPages,
 		}
 
+		articleData.Hidden = headers.Hidden
 		articleData.Title = headers.Title
 		articleData.Description = headers.Description
 		for tagIndex, tag := range headers.Tags {
@@ -260,32 +268,34 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 		}
 		articleTargetPath := filepath.Join("articles", article.Name())
 
-		// For feeds, we don't want certain elements, as they cause issues with
-		// feed readers.
-		feedContent, err := transformPage(rawContent, true)
-		if err != nil {
-			return fmt.Errorf("error transforming content for feed: %w", err)
-		}
+		if !articleData.Hidden {
+			// For feeds, we don't want certain elements, as they cause issues with
+			// feed readers.
+			feedContent, err := transformPage(rawContent, true)
+			if err != nil {
+				return fmt.Errorf("error transforming content for feed: %w", err)
+			}
 
-		newIndexedArticle := &indexedArticle{
-			pageConfig:   loadedPageConfig,
-			podcastAudio: articleData.PodcastAudio,
-			Title:        headers.Title,
-			File:         path.Join("articles", article.Name()),
-			RFC3339Time:  headers.dateParsed,
-			HumanTime:    articleData.HumanTime,
-			FeedContent:  string(feedContent),
-			Tags:         headers.Tags,
-			AuthorName:   headers.Author,
-			AuthorEmail:  headers.AuthorEmail,
-		}
-		// Fix page metadata to include correct name instead of main author.
-		if newIndexedArticle.AuthorName != "" {
-			newIndexedArticle.Author = newIndexedArticle.AuthorName
-			articleData.Author = newIndexedArticle.AuthorName
-		}
+			newIndexedArticle := &indexedArticle{
+				pageConfig:   loadedPageConfig,
+				podcastAudio: articleData.PodcastAudio,
+				Title:        headers.Title,
+				File:         path.Join("articles", article.Name()),
+				RFC3339Time:  headers.dateParsed,
+				HumanTime:    articleData.HumanTime,
+				FeedContent:  string(feedContent),
+				Tags:         headers.Tags,
+				AuthorName:   headers.Author,
+				AuthorEmail:  headers.AuthorEmail,
+			}
+			// Fix page metadata to include correct name instead of main author.
+			if newIndexedArticle.AuthorName != "" {
+				newIndexedArticle.Author = newIndexedArticle.AuthorName
+				articleData.Author = newIndexedArticle.AuthorName
+			}
 
-		indexedArticles = append(indexedArticles, newIndexedArticle)
+			indexedArticles = append(indexedArticles, newIndexedArticle)
+		}
 
 		if err := writeTemplateToFile(specificArticleTemplate, articleData, output, articleTargetPath, minifyOutput); err != nil {
 			return fmt.Errorf("error writing article: %w", err)
@@ -747,6 +757,9 @@ func joinURLParts(partOne, partTwo string) (string, error) {
 
 type pageConfig struct {
 	BasePath string
+	// Hidden will not show any links to the given page. This works for both
+	// custom pages and articles.
+	Hidden bool
 	// Title is the page titel, which differs from the SiteName.
 	Title               string
 	SiteName            string
@@ -763,8 +776,11 @@ type pageConfig struct {
 }
 
 type customPageEntry struct {
-	Title    string
-	File     string
+	Title string
+	File  string
+	// Hidden will not show any links to the given page. This works for both
+	// custom pages and articles.
+	Hidden   bool
 	data     *customPageData
 	template *template.Template
 }
@@ -786,6 +802,7 @@ type articlePageData struct {
 
 type customPageData struct {
 	pageConfig
+
 	// CustomPages are listed right of the default pages in the site navbar /
 	// header.
 	CustomPages []*customPageEntry
