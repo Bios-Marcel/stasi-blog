@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -52,16 +53,20 @@ func generateBuildCmd() *cobra.Command {
 	draft := buildCmd.Flags().BoolP("draft", "d", false, "Decides whether draft files are included in the build output.")
 	config := buildCmd.Flags().StringP("config", "c", "", "Defines where the config is. If left empty, the config will be assumed in the source directory.")
 	output := buildCmd.Flags().StringP("output", "o", "output", "Defines the directory where the build result will be written to.")
-	buildCmd.Run = func(cmd *cobra.Command, args []string) {
+	buildCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		source := args[0]
 		if source == *output {
-			log.Println("Error: Source and output can't be the same.")
-		} else {
-			if err := build(source, *output, *config, *minifyOutput, *draft); err != nil {
-				log.Println("Error during build:")
-				log.Println(err.Error())
-			}
+			return fmt.Errorf("source and output can't be the same")
 		}
+
+		builder, err := NewBuilder()
+		if err != nil {
+			return fmt.Errorf("error constructing builder: %w", err)
+		}
+		if err := builder.Build(source, *output, *config, *minifyOutput, *draft); err != nil {
+			return fmt.Errorf("error executing build: %w", err)
+		}
+		return nil
 	}
 
 	return buildCmd

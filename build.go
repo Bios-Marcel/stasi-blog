@@ -61,7 +61,35 @@ func (headers *ArticleHeaders) Parse() error {
 	return errors.Join(errs...)
 }
 
-func build(sourceFolder, output, config string, minifyOutput, draft bool) error {
+// Builder contains anything that is shared between builds. Multiple builds
+// occur during live mode, where changes are constantly applied to the running
+// server.
+type Builder struct {
+	templates *template.Template
+}
+
+func NewBuilder() (*Builder, error) {
+	builder := &Builder{}
+
+	var err error
+	builder.templates, err = template.New("").
+		Funcs(template.FuncMap{
+			"sub": func(a, b int) int {
+				return a - b
+			},
+			"add": func(a, b int) int {
+				return a + b
+			},
+		}).
+		ParseFS(skeletonFS, "skeletons/*.html")
+	if err != nil {
+		return nil, fmt.Errorf("couldn't parse HTML templates: %w", err)
+	}
+
+	return builder, nil
+}
+
+func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput, draft bool) error {
 	if err := cleanup(output); err != nil {
 		return fmt.Errorf("error performing cleanup: %w", err)
 	}
@@ -112,20 +140,6 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 		}
 	}
 
-	parsedTemplates, err := template.New("").
-		Funcs(template.FuncMap{
-			"sub": func(a, b int) int {
-				return a - b
-			},
-			"add": func(a, b int) int {
-				return a + b
-			},
-		}).
-		ParseFS(skeletonFS, "skeletons/*.html")
-	if err != nil {
-		return fmt.Errorf("couldn't parse HTML templates: %w", err)
-	}
-
 	customPageFiles, err := os.ReadDir(filepath.Join(sourceFolder, "pages"))
 	if err != nil {
 		return fmt.Errorf("couldn't handle pages directory: %w", err)
@@ -139,7 +153,7 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 	}
 
 	for index, customPage := range customPageFiles {
-		customPageSkeletonClone, err := parsedTemplates.Lookup("page").Clone()
+		customPageSkeletonClone, err := builder.templates.Lookup("page").Clone()
 		if err != nil {
 			return fmt.Errorf("couldn't clone 'page' template: %w", err)
 		}
@@ -206,7 +220,7 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 			continue
 		}
 
-		newArticleSkeleton, err := parsedTemplates.Lookup("article").Clone()
+		newArticleSkeleton, err := builder.templates.Lookup("article").Clone()
 		if err != nil {
 			return fmt.Errorf("couldn't clone article template: %w", err)
 		}
@@ -320,7 +334,7 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 	if *verbose {
 		log.Println("Writing main index files.")
 	}
-	indexTemplate := parsedTemplates.Lookup("index")
+	indexTemplate := builder.templates.Lookup("index")
 	writeIndexFiles(indexTemplate, indexedArticles, customPages, loadedPageConfig,
 		tags, "", "index.html", "index-%d.html", output, minifyOutput)
 
@@ -390,7 +404,7 @@ func build(sourceFolder, output, config string, minifyOutput, draft bool) error 
 		log.Println("Writing 404.html")
 	}
 
-	return writeTemplateToFile(parsedTemplates.Lookup("404"), &customPageData{
+	return writeTemplateToFile(builder.templates.Lookup("404"), &customPageData{
 		pageConfig:  loadedPageConfig,
 		CustomPages: customPages,
 	}, output, "404.html", minifyOutput)

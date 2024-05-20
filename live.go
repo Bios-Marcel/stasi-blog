@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/fs"
 	"log"
 	"path/filepath"
@@ -10,11 +11,17 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func live(sourceFolder, basepath, config string, port int, minifiyOutput, draft bool) error {
+func live(sourceFolder, basepath, config string, port int, minifyOutput, draft bool) error {
 	// Initial build
 	target := "./.tmp"
+
+	builder, err := NewBuilder()
+	if err != nil {
+		return fmt.Errorf("error constructing builder: %w", err)
+	}
+
 	build := func() error {
-		return build(sourceFolder, target, config, minifiyOutput, draft)
+		return builder.Build(sourceFolder, target, config, minifyOutput, draft)
 	}
 	if err := build(); err != nil {
 		// We don't return an error here, since the user can simply try
