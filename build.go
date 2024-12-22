@@ -497,6 +497,12 @@ func transformPage(post []byte, feed bool) ([]byte, error) {
 		token := tokenizer.Token()
 		if token.Type == html.StartTagToken {
 			switch token.Data {
+			case "script":
+				writer.WriteString(token.String())
+				tokenizer.Next()
+				token := tokenizer.Token()
+				writer.WriteString(token.Data)
+				continue
 			case "h2", "h3", "h4", "h5", "h6":
 				if err := transformHeading(tokenizer, token, writer); err != nil {
 					return handleErr(err)
