@@ -3,45 +3,62 @@
 <html lang="en-GB">
 
 <head>
-        {{template "base-header" .}}
-        <title>{{.Title}} | {{.SiteName}}</title>
-        {{template "base-metadata" .}}{{if .AddOptionalMetaData}}
-        {{template "opt-metadata" .}}
-        <meta property="og:title" content="{{.Title}}" />
-        <meta property="og:type" content="article" />{{if .Tags}}{{range .Tags}}
-        <meta property="article:tag" content="{{.}}" />{{end}}{{end}}
-        <meta property="article:published_time" content="{{.RFC3339Time}}" />{{end}}
+    {{template "base-header" .}}
+    <title>{{.Title}} | {{.SiteName}}</title>
+    {{template "base-metadata" .}}{{if .AddOptionalMetaData}}
+    {{template "opt-metadata" .}}
+    <meta property="og:title" content="{{.Title}}" />
+    <meta property="og:type" content="article" />{{if .Tags}}{{range .Tags}}
+    <meta property="article:tag" content="{{.}}" />{{end}}{{end}}
+    <meta property="article:published_time" content="{{.RFC3339Time}}" />{{end}}
+    {{if .Asciicasts }}
+    <link rel="stylesheet" type="text/css" href="/asciinema-player.css" />
+    {{end}}
 </head>
 
 <body>
-        <header>
-                {{template "header" .}}
-        </header>
-        <article>
-                <h1 class="article-h1">{{.Title}}</h1>
-                <span class="authoring-info">Written on {{.HumanTime}}{{if
-                        .Author}} by {{.Author}}{{end}}</span>
-                {{if .PodcastAudio}}<audio controls>
-                        <source src="{{.PodcastAudio}}" type="audio/mp3">
-                        Your browser is unable to play this audio.
-                </audio>{{end}}
-                {{template "content" .}}
-                {{if .UtterancesRepo}}
-                <script src="https://utteranc.es/client.js" repo="{{.UtterancesRepo}}" issue-term="title"
-                        theme="preferred-color-scheme" async>
-                        </script>
-                <noscript>
-                        <hr />
-                        <p><b>If you wish to access the comment section, you need to enable JavaScript.</b></p>
+    <header>
+        {{template "header" .}}
+    </header>
+    <article>
+        <h1 class="article-h1">{{.Title}}</h1>
+        <span class="authoring-info">Written on {{.HumanTime}}{{if
+            .Author}} by {{.Author}}{{end}}</span>
+        {{if .PodcastAudio}}<audio controls>
+            <source src="{{.PodcastAudio}}" type="audio/mp3">
+            Your browser is unable to play this audio.
+        </audio>{{end}}
+        {{template "content" .}}
+        {{if .Asciicasts }}
+        <script type="text/javascript">
+            let script = document.createElement('script');
+            script.src = "/asciinema-player.min.js";
+            script.async = true;
+            script.onload = function () {
+                {{ range $asciicast:= .Asciicasts }}
+                AsciinemaPlayer.create('{{$asciicast.Src}}',
+                    document.getElementById('{{$asciicast.Id}}'));
+                {{end}}
+            };
+            document.head.appendChild(script);
+        </script>
+        {{end}}
+        {{if .UtterancesRepo}}
+        <script src="https://utteranc.es/client.js" repo="{{.UtterancesRepo}}" issue-term="title"
+            theme="preferred-color-scheme" async>
+            </script>
+        <noscript>
+            <hr />
+            <p><b>If you wish to access the comment section, you need to enable JavaScript.</b></p>
 
-                        <p>Alternatively, you can try reading the comment directly on GitHub:</p>
+            <p>Alternatively, you can try reading the comment directly on GitHub:</p>
 
-                        <a
-                                href="https://github.com/{{.UtterancesRepo}}/issues?q=is%3Aissue+is%3Aopen+%22{{.Title}}%22+in%3Atitle">
-                                Find comments for {{.Title}}
-                        </a>
-                </noscript>{{end}}
-        </article>
+            <a href="https://github.com/{{.UtterancesRepo}}/issues?q=is%3Aissue+is%3Aopen+%22{{.Title}}%22+in%3Atitle">
+                Find comments for {{.Title}}
+            </a>
+        </noscript>{{end}}
+    </article>
 </body>
 
 </html>{{end}}
+

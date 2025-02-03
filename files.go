@@ -25,7 +25,7 @@ func init() {
 }
 
 func createFile(path string) (*os.File, error) {
-	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o400)
+	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 }
 
 func writeTemplateToFile(

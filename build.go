@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"html/template"
 	"io"
 	"log"
@@ -159,7 +160,7 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 		}
 
 		sourcePath := filepath.Join(sourceFolder, "pages", customPage.Name())
-		headers, rawContent, err := parsePage(sourcePath)
+		headers, rawCustomPage, err := parsePage(sourcePath)
 		if err != nil {
 			return fmt.Errorf("error parsing page '%s': %w", customPage.Name(), err)
 		}
@@ -171,12 +172,12 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 			continue
 		}
 
-		rawContent, err = transformPage(rawContent, false)
+		rawCustomPage, _, err = transformPage(rawCustomPage, false)
 		if err != nil {
 			return fmt.Errorf("error transforming page: %w", err)
 		}
 
-		customPageTemplate, err := customPageSkeletonClone.Parse(`{{define "content"}}` + string(rawContent) + `{{end}}`)
+		customPageTemplate, err := customPageSkeletonClone.Parse(`{{define "content"}}` + string(rawCustomPage) + `{{end}}`)
 		if err != nil {
 			return fmt.Errorf("couldn't parse custom page '%s': %w", customPage.Name(), err)
 		}
@@ -238,7 +239,7 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 			continue
 		}
 
-		transformedContent, err := transformPage([]byte(rawContent), false)
+		transformedContent, meta, err := transformPage([]byte(rawContent), false)
 		if err != nil {
 			return fmt.Errorf("error transforming article: %w", err)
 		}
@@ -252,6 +253,7 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 		articleData := &articlePageData{
 			pageConfig:  loadedPageConfig,
 			CustomPages: customPages,
+			Asciicasts:  meta.Asciicasts,
 		}
 
 		articleData.Hidden = headers.Hidden
@@ -277,7 +279,7 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 		if !articleData.Hidden {
 			// For feeds, we don't want certain elements, as they cause issues with
 			// feed readers.
-			feedContent, err := transformPage(rawContent, true)
+			feedContent, _, err := transformPage(rawContent, true)
 			if err != nil {
 				return fmt.Errorf("error transforming content for feed: %w", err)
 			}
@@ -369,6 +371,14 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 	if err != nil {
 		return fmt.Errorf("couldn't read base.css: %w", err)
 	}
+	asciinemaJSFile, err := skeletonFS.Open("skeletons/asciinema-player.min.js")
+	if err != nil {
+		return fmt.Errorf("couldn't read asciinema-player.min.js`: %w", err)
+	}
+	asciinemaCSSFile, err := skeletonFS.Open("skeletons/asciinema-player.css")
+	if err != nil {
+		return fmt.Errorf("couldn't read asciinema-player.css: %w", err)
+	}
 
 	if minifyOutput {
 		if *verbose {
@@ -385,7 +395,7 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 		}
 	} else {
 		if *verbose {
-			log.Println("Copying base.css.")
+			log.Println("Copying base.css ...")
 		}
 		if err := copyDataIntoFile(baseCSSFile, filepath.Join(output, "base.css")); err != nil {
 			return err
@@ -394,6 +404,19 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 
 	if *verbose {
 		log.Println("Copying media directory.")
+	}
+
+	if *verbose {
+		log.Println("Copying asciinema-player.min.js ...")
+	}
+	if err := copyDataIntoFile(asciinemaJSFile, filepath.Join(output, "asciinema-player.min.js")); err != nil {
+		return err
+	}
+	if *verbose {
+		log.Println("Copying asciinema-player.css ...")
+	}
+	if err := copyDataIntoFile(asciinemaCSSFile, filepath.Join(output, "asciinema-player.css")); err != nil {
+		return err
 	}
 
 	if err := copy.Copy(filepath.Join(sourceFolder, "media"), filepath.Join(output, "media")); err != nil {
@@ -471,22 +494,28 @@ func parsePage(sourcePath string) (ArticleHeaders, []byte, error) {
 	return headers, parts[1], nil
 }
 
-func transformPage(post []byte, feed bool) ([]byte, error) {
+type transformMeta struct {
+	// Asciicast is true, if there's at least one asciicast element on the page.
+	Asciicasts []asciicastMeta
+}
+
+func transformPage(post []byte, feed bool) ([]byte, transformMeta, error) {
 	// We don't want to transform any elements for the feed as of now, as
 	// these are things the RSS reader should do. We only provide content,
 	// not style.
+	var meta transformMeta
 	if feed {
-		return post, nil
+		return post, meta, nil
 	}
 
 	reader := bytes.NewReader(post)
 	writer := bytes.NewBuffer(make([]byte, 0, len(post)+1048))
 	tokenizer := html.NewTokenizer(reader)
-	handleErr := func(err error) ([]byte, error) {
+	handleErr := func(err error) ([]byte, transformMeta, error) {
 		if errors.Is(err, io.EOF) {
-			return writer.Bytes(), nil
+			return writer.Bytes(), meta, nil
 		}
-		return nil, err
+		return nil, meta, err
 	}
 	for {
 		tokenType := tokenizer.Next()
@@ -522,6 +551,13 @@ func transformPage(post []byte, feed bool) ([]byte, error) {
 		// so we treat both types, as browsers are lenient.
 		if token.Type == html.SelfClosingTagToken {
 			switch token.Data {
+			case "asciicast":
+				if asciicastMeta, err := transformAsciicast(token, writer); err != nil {
+					return handleErr(err)
+				} else {
+					meta.Asciicasts = append(meta.Asciicasts, asciicastMeta)
+				}
+				continue
 			case "img":
 				if err := transformImage(token, writer); err != nil {
 					return handleErr(err)
@@ -562,6 +598,33 @@ func attr(token html.Token, key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+type asciicastMeta struct {
+	Id  string
+	Src string
+}
+
+func transformAsciicast(asciicastToken html.Token, writer *bytes.Buffer) (asciicastMeta, error) {
+	var meta asciicastMeta
+	src, _ := attr(asciicastToken, "src")
+	if src == "" {
+		return meta, fmt.Errorf("source empty")
+	}
+
+	hash := fnv.New32()
+	_, err := hash.Write([]byte(src))
+	if err != nil {
+		return meta, fmt.Errorf("error hashing path: %w", err)
+	}
+	srcHash := fmt.Sprintf("%x", hash.Sum(nil))
+
+	meta.Id = string(srcHash)
+	meta.Src = src
+
+	writer.WriteString(fmt.Sprintf(`<div id="%s"></div>`, meta.Id))
+
+	return meta, nil
 }
 
 func transformImage(imageToken html.Token, writer *bytes.Buffer) error {
@@ -841,6 +904,10 @@ type articlePageData struct {
 	// CustomPages are listed right of the default pages in the site navbar /
 	// header.
 	CustomPages []*customPageEntry
+	// Asciicast defines whether one or more asciicast elements are present on
+	// the page, automatically causing the generator to add the required scripts
+	// and stylesheets.
+	Asciicasts []asciicastMeta
 }
 
 type customPageData struct {
