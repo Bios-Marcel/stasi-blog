@@ -50,7 +50,7 @@ func generateBuildCmd() *cobra.Command {
 		Args:       cobra.ExactArgs(1),
 	}
 	minifyOutput := buildCmd.Flags().BoolP("minify", "m", false, "Decides whether css and html files will be minified (reduces file size).")
-	draft := buildCmd.Flags().BoolP("draft", "d", false, "Decides whether draft files are included in the build output.")
+	includeDrafts := buildCmd.Flags().BoolP("draft", "d", false, "Decides whether draft files are included in the build output.")
 	config := buildCmd.Flags().StringP("config", "c", "", "Defines where the config is. If left empty, the config will be assumed in the source directory.")
 	output := buildCmd.Flags().StringP("output", "o", "output", "Defines the directory where the build result will be written to.")
 	buildCmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -63,7 +63,7 @@ func generateBuildCmd() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("error constructing builder: %w", err)
 		}
-		if err := builder.Build(source, *output, *config, *minifyOutput, *draft); err != nil {
+		if err := builder.Build(source, *output, *config, *minifyOutput, *includeDrafts); err != nil {
 			return fmt.Errorf("error executing build: %w", err)
 		}
 		return nil

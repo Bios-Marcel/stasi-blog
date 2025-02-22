@@ -11,7 +11,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func live(sourceFolder, basepath, config string, port int, minifyOutput, draft bool) error {
+func live(sourceDir, basepath, configPath string, port int, minifyOutput, includeDrafts bool) error {
 	// Initial build
 	target := "./.tmp"
 
@@ -21,7 +21,7 @@ func live(sourceFolder, basepath, config string, port int, minifyOutput, draft b
 	}
 
 	build := func() error {
-		return builder.Build(sourceFolder, target, config, minifyOutput, draft)
+		return builder.Build(sourceDir, target, configPath, minifyOutput, includeDrafts)
 	}
 	if err := build(); err != nil {
 		// We don't return an error here, since the user can simply try
@@ -59,12 +59,14 @@ func live(sourceFolder, basepath, config string, port int, minifyOutput, draft b
 				// on the whole codebase.
 				debouncer(func() {
 					log.Println("Rebuilding ...", event)
-					now := time.Now()
+
+					buildStartTime := time.Now()
 					if err := build(); err != nil {
 						log.Println("Error rebuilding:", err)
-					} else {
-						log.Printf("Rebuild successful. (%s)\n", time.Since(now).String())
+						return
 					}
+
+					log.Printf("Rebuild successful. (%s)\n", time.Since(buildStartTime).String())
 				})
 			case err, channelOpen := <-watcher.Errors:
 				if !channelOpen {
@@ -76,19 +78,17 @@ func live(sourceFolder, basepath, config string, port int, minifyOutput, draft b
 	}()
 
 	err = filepath.WalkDir(
-		sourceFolder,
+		sourceDir,
 		func(path string, dirEntry fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 
-			if dirEntry.IsDir() {
-				if err := watcher.Add(path); err != nil {
-					return err
-				}
+			if !dirEntry.IsDir() {
+				return nil
 			}
 
-			return nil
+			return watcher.Add(path)
 		})
 	if err != nil {
 		return err

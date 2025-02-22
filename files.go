@@ -29,12 +29,12 @@ func createFile(path string) (*os.File, error) {
 }
 
 func writeTemplateToFile(
-	sourceTemplate *template.Template,
-	data any,
-	outputFolder, path string,
+	template *template.Template,
+	templateData any,
+	outputDir, path string,
 	minifyOutput bool,
 ) error {
-	file, err := createFile(filepath.Join(outputFolder, path))
+	file, err := createFile(filepath.Join(outputDir, path))
 	if err != nil {
 		return err
 	}
@@ -43,16 +43,16 @@ func writeTemplateToFile(
 	if minifyOutput {
 		// minify.Writer sadly doesn't work, the files end up empty.
 		templateBuffer := &bytes.Buffer{}
-		if err := sourceTemplate.Execute(templateBuffer, data); err != nil {
-			return fmt.Errorf("error executing template '%s': %w", sourceTemplate.Name(), err)
+		if err := template.Execute(templateBuffer, templateData); err != nil {
+			return fmt.Errorf("error executing template '%s': %w", template.Name(), err)
 		}
 
 		if err := minifier.Minify("text/html", file, templateBuffer); err != nil {
-			return fmt.Errorf("error minifying template '%s': %w", sourceTemplate.Name(), err)
+			return fmt.Errorf("error minifying template '%s': %w", template.Name(), err)
 		}
 	} else {
-		if err := sourceTemplate.Execute(file, data); err != nil {
-			return fmt.Errorf("error executing template '%s': %w", sourceTemplate.Name(), err)
+		if err := template.Execute(file, templateData); err != nil {
+			return fmt.Errorf("error executing template '%s': %w", template.Name(), err)
 		}
 	}
 

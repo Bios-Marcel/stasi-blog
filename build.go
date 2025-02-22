@@ -75,6 +75,7 @@ func NewBuilder() (*Builder, error) {
 	var err error
 	builder.templates, err = template.New("").
 		Funcs(template.FuncMap{
+			// Both sub and add are used for the paging numbers
 			"sub": func(a, b int) int {
 				return a - b
 			},
@@ -90,58 +91,61 @@ func NewBuilder() (*Builder, error) {
 	return builder, nil
 }
 
-func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput, draft bool) error {
-	if err := cleanup(output); err != nil {
+func (builder *Builder) Build(
+	sourceDir, outputDir, configPath string,
+	minifyOutput, includeDrafts bool,
+) error {
+	if err := cleanup(outputDir); err != nil {
 		return fmt.Errorf("error performing cleanup: %w", err)
 	}
 
-	// Create empty directories
 	err := createDirectories(
-		filepath.Join(output, "media"),
-		filepath.Join(output, "articles"),
-		filepath.Join(output, "pages"),
+		filepath.Join(outputDir, "media"),
+		filepath.Join(outputDir, "articles"),
+		filepath.Join(outputDir, "pages"),
 	)
 	if err != nil {
 		return fmt.Errorf("error preparing target folder structure: %w", err)
 	}
 
-	loadedPageConfig := pageConfig{
+	blogConfig := blogConfig{
 		DateFormat:      "2 January 2006",
 		MaxIndexEntries: 10,
 	}
-	var configPath string
-	if config != "" {
-		configPath = config
-	} else {
-		configPath = filepath.Join(sourceFolder, "config.json")
+	if configPath == "" {
+		configPath = filepath.Join(sourceDir, "config.json")
 	}
 	configFile, err := os.Open(configPath)
 	if err != nil {
 		return fmt.Errorf("error loading config '%s': %w", configPath, err)
 	}
 
-	if err := json.NewDecoder(configFile).Decode(&loadedPageConfig); err != nil {
+	if err := json.NewDecoder(configFile).Decode(&blogConfig); err != nil {
 		log.Fatalf("Error decoding config: %s\n", err)
 	}
-	if loadedPageConfig.BasePath != "" {
+	if blogConfig.BasePath != "" {
 		// Making sure there's not too many or too little slashes ;)
-		loadedPageConfig.BasePath = "/" + strings.Trim(loadedPageConfig.BasePath, `/\`)
+		blogConfig.BasePath = "/" + strings.Trim(blogConfig.BasePath, `/\`)
 	}
 
-	loadedPageConfig.Favicon, err = copyFavicon(sourceFolder, output)
+	blogConfig.Favicon, err = copyFavicon(sourceDir, outputDir)
 	if err != nil {
 		return fmt.Errorf("error copying favicon: %w", err)
 	}
 
 	if *verbose {
-		if loadedPageConfig.Favicon == "" {
+		if blogConfig.Favicon == "" {
 			log.Println("Warning: Neither 'favicon.ico' nor 'favicon.png' were found, is this intentional?")
 		} else {
-			log.Printf("Using favicon '%s'.\n", loadedPageConfig.Favicon)
+			log.Printf("Using favicon '%s'.\n", blogConfig.Favicon)
 		}
 	}
 
-	customPageFiles, err := os.ReadDir(filepath.Join(sourceFolder, "pages"))
+	if *verbose {
+		log.Printf("Indexing and writing custom pages ...\n")
+	}
+
+	customPageFiles, err := os.ReadDir(filepath.Join(sourceDir, "pages"))
 	if err != nil {
 		return fmt.Errorf("couldn't handle pages directory: %w", err)
 	}
@@ -149,30 +153,26 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 	// We collect these to display them on the page header.
 	customPages := make([]*customPageEntry, len(customPageFiles))
 
-	if *verbose {
-		log.Printf("Indexing and writing custom pages ...\n")
-	}
-
 	for index, customPage := range customPageFiles {
 		customPageSkeletonClone, err := builder.templates.Lookup("page").Clone()
 		if err != nil {
 			return fmt.Errorf("couldn't clone 'page' template: %w", err)
 		}
 
-		sourcePath := filepath.Join(sourceFolder, "pages", customPage.Name())
+		sourcePath := filepath.Join(sourceDir, "pages", customPage.Name())
 		headers, rawCustomPage, err := parsePage(sourcePath)
 		if err != nil {
 			return fmt.Errorf("error parsing page '%s': %w", customPage.Name(), err)
 		}
 
-		if !draft && headers.Draft {
+		if !includeDrafts && headers.Draft {
 			if *verbose {
 				fmt.Printf("Skipping page draft '%s'\n", customPage.Name())
 			}
 			continue
 		}
 
-		rawCustomPage, _, err = transformPage(rawCustomPage, false)
+		rawCustomPage, _, err = transformPageForWeb(rawCustomPage)
 		if err != nil {
 			return fmt.Errorf("error transforming page: %w", err)
 		}
@@ -183,7 +183,7 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 		}
 
 		data := &customPageData{
-			pageConfig:  loadedPageConfig,
+			blogConfig:  blogConfig,
 			CustomPages: customPages,
 		}
 		data.Hidden = headers.Hidden
@@ -199,12 +199,12 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 	}
 
 	for _, page := range customPages {
-		if err := writeTemplateToFile(page.template, page.data, output, page.File, minifyOutput); err != nil {
+		if err := writeTemplateToFile(page.template, page.data, outputDir, page.File, minifyOutput); err != nil {
 			return fmt.Errorf("error writing custom page: %w", err)
 		}
 	}
 
-	articles, err := os.ReadDir(filepath.Join(sourceFolder, "articles"))
+	articles, err := os.ReadDir(filepath.Join(sourceDir, "articles"))
 	if err != nil {
 		return fmt.Errorf("couldn't read source articles: %w", err)
 	}
@@ -226,20 +226,20 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 			return fmt.Errorf("couldn't clone article template: %w", err)
 		}
 
-		sourcePath := filepath.Join(sourceFolder, "articles", article.Name())
+		sourcePath := filepath.Join(sourceDir, "articles", article.Name())
 		headers, rawContent, err := parsePage(sourcePath)
 		if err != nil {
 			return fmt.Errorf("error parsing article '%s': %w", article.Name(), err)
 		}
 
-		if !draft && headers.Draft {
+		if !includeDrafts && headers.Draft {
 			if *verbose {
 				fmt.Printf("Skipping article draft '%s'\n", article.Name())
 			}
 			continue
 		}
 
-		transformedContent, meta, err := transformPage([]byte(rawContent), false)
+		transformedContent, meta, err := transformPageForWeb(rawContent)
 		if err != nil {
 			return fmt.Errorf("error transforming article: %w", err)
 		}
@@ -251,7 +251,7 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 			return fmt.Errorf("couldn't parse article '%s': %w", article.Name(), err)
 		}
 		articleData := &articlePageData{
-			pageConfig:  loadedPageConfig,
+			blogConfig:  blogConfig,
 			CustomPages: customPages,
 			Asciicasts:  meta.Asciicasts,
 		}
@@ -268,24 +268,22 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 		articleData.Tags = headers.Tags
 
 		articleData.RFC3339Time = headers.dateParsed.Format(time.RFC3339)
-		articleData.HumanTime = headers.dateParsed.Format(loadedPageConfig.DateFormat)
+		articleData.HumanTime = headers.dateParsed.Format(blogConfig.DateFormat)
 		if headers.PodcastAudio != "" {
 			if strings.HasPrefix(strings.TrimPrefix(headers.PodcastAudio, "/"), "media") {
-				articleData.PodcastAudio = path.Join(loadedPageConfig.BasePath, headers.PodcastAudio)
+				articleData.PodcastAudio = path.Join(blogConfig.BasePath, headers.PodcastAudio)
 			}
 		}
 		articleTargetPath := filepath.Join("articles", article.Name())
 
 		if !articleData.Hidden {
-			// For feeds, we don't want certain elements, as they cause issues with
-			// feed readers.
-			feedContent, _, err := transformPage(rawContent, true)
+			feedContent, err := transformPageForRSS(rawContent)
 			if err != nil {
 				return fmt.Errorf("error transforming content for feed: %w", err)
 			}
 
 			newIndexedArticle := &indexedArticle{
-				pageConfig:   loadedPageConfig,
+				blogConfig:   blogConfig,
 				podcastAudio: articleData.PodcastAudio,
 				Title:        headers.Title,
 				File:         path.Join("articles", article.Name()),
@@ -305,7 +303,7 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 			indexedArticles = append(indexedArticles, newIndexedArticle)
 		}
 
-		if err := writeTemplateToFile(specificArticleTemplate, articleData, output, articleTargetPath, minifyOutput); err != nil {
+		if err := writeTemplateToFile(specificArticleTemplate, articleData, outputDir, articleTargetPath, minifyOutput); err != nil {
 			return fmt.Errorf("error writing article: %w", err)
 		}
 	}
@@ -337,8 +335,8 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 		log.Println("Writing main index files.")
 	}
 	indexTemplate := builder.templates.Lookup("index")
-	writeIndexFiles(indexTemplate, indexedArticles, customPages, loadedPageConfig,
-		tags, "", "index.html", "index-%d.html", output, minifyOutput)
+	writeIndexFiles(indexTemplate, indexedArticles, customPages, blogConfig,
+		tags, "", "index.html", "index-%d.html", outputDir, minifyOutput)
 
 	if *verbose {
 		log.Println("Writing tagged index files.")
@@ -356,14 +354,14 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 			}
 		}
 
-		writeIndexFiles(indexTemplate, tagFilteredArticles, customPages, loadedPageConfig,
-			tags, tag, "index-"+tag+".html", "index-"+tag+"-%d.html", output, minifyOutput)
+		writeIndexFiles(indexTemplate, tagFilteredArticles, customPages, blogConfig,
+			tags, tag, "index-"+tag+".html", "index-"+tag+"-%d.html", outputDir, minifyOutput)
 	}
 
 	if *verbose {
 		log.Println("Writing RSS feed.")
 	}
-	if err := writeRSSFeed(sourceFolder, output, indexedArticles, loadedPageConfig); err != nil {
+	if err := writeRSSFeed(sourceDir, outputDir, indexedArticles, blogConfig); err != nil {
 		return fmt.Errorf("error writing rss feed: %w", err)
 	}
 
@@ -384,7 +382,7 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 		if *verbose {
 			log.Println("Copying and minifying base.css.")
 		}
-		baseCSSOutput, err := createFile(filepath.Join(output, "base.css"))
+		baseCSSOutput, err := createFile(filepath.Join(outputDir, "base.css"))
 		if err != nil {
 			return err
 		}
@@ -397,7 +395,7 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 		if *verbose {
 			log.Println("Copying base.css ...")
 		}
-		if err := copyDataIntoFile(baseCSSFile, filepath.Join(output, "base.css")); err != nil {
+		if err := copyDataIntoFile(baseCSSFile, filepath.Join(outputDir, "base.css")); err != nil {
 			return err
 		}
 	}
@@ -409,17 +407,17 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 	if *verbose {
 		log.Println("Copying asciinema-player.min.js ...")
 	}
-	if err := copyDataIntoFile(asciinemaJSFile, filepath.Join(output, "asciinema-player.min.js")); err != nil {
+	if err := copyDataIntoFile(asciinemaJSFile, filepath.Join(outputDir, "asciinema-player.min.js")); err != nil {
 		return err
 	}
 	if *verbose {
 		log.Println("Copying asciinema-player.css ...")
 	}
-	if err := copyDataIntoFile(asciinemaCSSFile, filepath.Join(output, "asciinema-player.css")); err != nil {
+	if err := copyDataIntoFile(asciinemaCSSFile, filepath.Join(outputDir, "asciinema-player.css")); err != nil {
 		return err
 	}
 
-	if err := copy.Copy(filepath.Join(sourceFolder, "media"), filepath.Join(output, "media")); err != nil {
+	if err := copy.Copy(filepath.Join(sourceDir, "media"), filepath.Join(outputDir, "media")); err != nil {
 		return fmt.Errorf("couldn't copy media directory: %w", err)
 	}
 
@@ -428,16 +426,16 @@ func (builder *Builder) Build(sourceFolder, output, config string, minifyOutput,
 	}
 
 	return writeTemplateToFile(builder.templates.Lookup("404"), &customPageData{
-		pageConfig:  loadedPageConfig,
+		blogConfig:  blogConfig,
 		CustomPages: customPages,
-	}, output, "404.html", minifyOutput)
+	}, outputDir, "404.html", minifyOutput)
 }
 
-func copyFavicon(sourceFolder, output string) (string, error) {
+func copyFavicon(sourceDir, outputDir string) (string, error) {
 	// .ico is preferred, as it has multi resolution support.
 	err := copyFileByPath(
-		filepath.Join(sourceFolder, "favicon.ico"),
-		filepath.Join(output, "favicon.ico"))
+		filepath.Join(sourceDir, "favicon.ico"),
+		filepath.Join(outputDir, "favicon.ico"))
 	if err == nil {
 		return "favicon.ico", nil
 	}
@@ -445,68 +443,72 @@ func copyFavicon(sourceFolder, output string) (string, error) {
 	// If we encounter any error, aside from non-existence, we early
 	// exit, as trying the other format doesn't make sense.
 	if !os.IsNotExist(err) {
-		return "favicon.ico", fmt.Errorf("error copying favicon.ico: %w", err)
+		return "", fmt.Errorf("error copying favicon.ico: %w", err)
 	}
 
 	// Doesn't exist, fallthrough to png.
 
 	err = copyFileByPath(
-		filepath.Join(sourceFolder, "favicon.png"),
-		filepath.Join(output, "favicon.png"))
+		filepath.Join(sourceDir, "favicon.png"),
+		filepath.Join(outputDir, "favicon.png"))
 	if err == nil {
 		return "favicon.png", nil
 	}
 
 	if !os.IsNotExist(err) {
-		return "favicon.png", fmt.Errorf("error copying favicon.png: %w", err)
+		return "", fmt.Errorf("error copying favicon.png: %w", err)
 	}
 
 	return "", nil
 }
 
-func parsePage(sourcePath string) (ArticleHeaders, []byte, error) {
+// parsePage can parse both articles and custom pages.
+func parsePage(pagePath string) (ArticleHeaders, []byte, error) {
 	var headers ArticleHeaders
-	sourceFile, err := os.Open(sourcePath)
+	pageFile, err := os.Open(pagePath)
 	if err != nil {
 		return headers, nil, fmt.Errorf("error opening article: %w", err)
 	}
+	defer pageFile.Close()
 
-	articleBytes, err := io.ReadAll(sourceFile)
+	pageBytes, err := io.ReadAll(pageFile)
 	if err != nil {
 		return headers, nil, fmt.Errorf("error reading article: %w", err)
 	}
-	defer sourceFile.Close()
 
 	// Prevent follow-up errors on windows.
-	articleBytes = bytes.ReplaceAll(articleBytes, []byte("\r\n"), []byte("\n"))
+	pageBytes = bytes.ReplaceAll(pageBytes, []byte("\r\n"), []byte("\n"))
 
-	parts := bytes.SplitN(articleBytes, []byte("\n---\n"), 2)
-	if len(parts) < 2 {
+	headerAndContent := bytes.SplitN(pageBytes, []byte("\n---\n"), 2)
+	if len(headerAndContent) < 2 {
 		return headers, nil, errors.New("header missing, separate with `\n---\n`")
 	}
+	if len(headerAndContent) > 2 {
+		return headers, nil, errors.New("there must only be one header")
+	}
 
-	if err := yaml.Unmarshal(parts[0], &headers); err != nil {
+	if err := yaml.Unmarshal(headerAndContent[0], &headers); err != nil {
 		return headers, nil, fmt.Errorf("error reading headers: %w", err)
 	}
 	if err := headers.Parse(); err != nil {
 		return headers, nil, fmt.Errorf("error parsing headers: %w", err)
 	}
-	return headers, parts[1], nil
+	return headers, headerAndContent[1], nil
+}
+
+func transformPageForRSS(post []byte) ([]byte, error) {
+	// FIXME What to do with asciicasts? Convert to links?
+	return post, nil
 }
 
 type transformMeta struct {
-	// Asciicast is true, if there's at least one asciicast element on the page.
 	Asciicasts []asciicastMeta
 }
 
-func transformPage(post []byte, feed bool) ([]byte, transformMeta, error) {
-	// We don't want to transform any elements for the feed as of now, as
-	// these are things the RSS reader should do. We only provide content,
-	// not style.
+// transformPageForWeb transforms raw HTML into user presentable HTML for the
+// webpage. This is not intended for the RSS feed.
+func transformPageForWeb(post []byte) ([]byte, transformMeta, error) {
 	var meta transformMeta
-	if feed {
-		return post, meta, nil
-	}
 
 	reader := bytes.NewReader(post)
 	writer := bytes.NewBuffer(make([]byte, 0, len(post)+1048))
@@ -517,14 +519,14 @@ func transformPage(post []byte, feed bool) ([]byte, transformMeta, error) {
 		}
 		return nil, meta, err
 	}
+
 	for {
 		tokenType := tokenizer.Next()
-		if tokenType == html.ErrorToken {
-			return handleErr(tokenizer.Err())
-		}
-
 		token := tokenizer.Token()
-		if token.Type == html.StartTagToken {
+		switch tokenType {
+		case html.ErrorToken:
+			return handleErr(tokenizer.Err())
+		case html.StartTagToken:
 			switch token.Data {
 			case "script":
 				writer.WriteString(token.String())
@@ -543,13 +545,11 @@ func transformPage(post []byte, feed bool) ([]byte, transformMeta, error) {
 				}
 				continue
 			}
-		}
-
-		// Some tags are self-closing, such as "img". Meaning it doesn't matter
-		// whether you put "<img>" or "</img>". However, the tokenizer will
-		// still output a different token type, as the parsing isn't semantic,
-		// so we treat both types, as browsers are lenient.
-		if token.Type == html.SelfClosingTagToken {
+		case html.SelfClosingTagToken:
+			// Some tags are self-closing, such as "img". Meaning it doesn't matter
+			// whether you put "<img>" or "</img>". However, the tokenizer will
+			// still output a different token type, as the parsing isn't semantic,
+			// so we treat both types, as browsers are lenient.
 			switch token.Data {
 			case "asciicast":
 				if asciicastMeta, err := transformAsciicast(token, writer); err != nil {
@@ -656,9 +656,10 @@ func transformHeading(tokenizer *html.Tokenizer, headingOpen html.Token, writer 
 			return err
 		}
 
-		if tokenType == html.TextToken {
+		switch tokenType {
+		case html.TextToken:
 			lastText = token.String()
-		} else if tokenType == html.EndTagToken {
+		case html.EndTagToken:
 			if lastText != "" {
 				id := convertToElementId(lastText)
 				headingOpen.Attr = append(headingOpen.Attr, html.Attribute{Key: "id", Val: id})
@@ -670,7 +671,7 @@ func transformHeading(tokenizer *html.Tokenizer, headingOpen html.Token, writer 
 
 			writer.WriteString(token.String())
 			return nil
-		} else {
+		default:
 			writer.WriteString(token.String())
 		}
 	}
@@ -711,7 +712,7 @@ func writeIndexFiles(
 	indexTemplate *template.Template,
 	indexedArticles []*indexedArticle,
 	customPages []*customPageEntry,
-	loadedPageConfig pageConfig,
+	loadedPageConfig blogConfig,
 	tags []string,
 	filterTag string,
 	firstIndexName string,
@@ -733,7 +734,7 @@ func writeIndexFiles(
 			pageName = fmt.Sprintf(indexNameTemplate, currentPageNumber)
 		}
 		data := &indexData{
-			pageConfig:       loadedPageConfig,
+			blogConfig:       loadedPageConfig,
 			Tags:             tags,
 			FilterTag:        filterTag,
 			CustomPages:      customPages,
@@ -759,7 +760,7 @@ func writeIndexFiles(
 	return nil
 }
 
-func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle, loadedPageConfig pageConfig) error {
+func writeRSSFeed(sourceFolder, outputFolder string, articles []*indexedArticle, loadedPageConfig blogConfig) error {
 	var mainAuthor *feeds.Author
 	if loadedPageConfig.Email != "" {
 		mainAuthor = &feeds.Author{
@@ -861,7 +862,7 @@ func joinURLParts(partOne, partTwo string) (string, error) {
 	return url.String(), nil
 }
 
-type pageConfig struct {
+type blogConfig struct {
 	BasePath string
 	// Hidden will not show any links to the given page. This works for both
 	// custom pages and articles.
@@ -892,7 +893,7 @@ type customPageEntry struct {
 }
 
 type articlePageData struct {
-	pageConfig
+	blogConfig
 	// Time article was published in RFC3339 format.
 	RFC3339Time string
 	// HumanTime is a human readable time format.
@@ -911,7 +912,7 @@ type articlePageData struct {
 }
 
 type customPageData struct {
-	pageConfig
+	blogConfig
 
 	// CustomPages are listed right of the default pages in the site navbar /
 	// header.
@@ -919,7 +920,7 @@ type customPageData struct {
 }
 
 type indexData struct {
-	pageConfig
+	blogConfig
 	// Tags are all available tags used accross all posts
 	Tags []string
 	// FilterTag that is currently filtered for
@@ -941,7 +942,7 @@ type indexData struct {
 }
 
 type indexedArticle struct {
-	pageConfig
+	blogConfig
 	AuthorName   string
 	AuthorEmail  string
 	Title        string
