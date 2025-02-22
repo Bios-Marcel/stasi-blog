@@ -940,22 +940,6 @@ type indexData struct {
 	LastPageNum    int
 }
 
-func templateToString(temp *template.Template) (string, error) {
-	buffer := &bytes.Buffer{}
-	if err := temp.Execute(buffer, nil); err != nil {
-		return "", fmt.Errorf("couldn't execute template '%s': %w", temp.Name(), err)
-	}
-	return buffer.String(), nil
-}
-
-func templateToOptionalString(temp *template.Template) (string, error) {
-	if temp == nil {
-		return "", nil
-	}
-
-	return templateToString(temp)
-}
-
 type indexedArticle struct {
 	pageConfig
 	AuthorName   string
